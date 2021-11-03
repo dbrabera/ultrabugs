@@ -1,60 +1,104 @@
--- title:  game title
--- author: game developer
+-- title:  untitled
+-- author: Diego Barbera
 -- desc:   short description
 -- script: lua
 
-GRID_SIZE = 8
-SPRITE_SIZE = 16
+local GRID_SIZE = 8
+local SPRITE_SIZE = 16
 
-pointer_grid_x = 0
-pointer_grid_y = 0
+local Hero = {}
 
-player_grid_x = 0
-player_grid_y = 0
+function Hero.new(game_x, game_y)
+	local self = {}
+	setmetatable(self, { __index = Hero })
 
-function TIC()
-	update()
-	draw()
+	self.game_x = game_x
+	self.game_y = game_y
+
+	return self
 end
 
-function update() 
+function Hero:move(game_x, game_y)
+	self.game_x = game_x
+	self.game_y = game_y
+end
+
+local Game = {}
+
+function Game.new(screen_x, screen_y)
+	local self = {}
+	setmetatable(self, { __index = Game })
+
+	self.screen_x = screen_x
+	self.screen_y = screen_y
+	self.hero = Hero.new(0, 0)
+	self.pointer_game_x = -1
+	self.pointer_game_y = -1
+
+	return self
+end
+
+function Game:update()
 	local mx, my, md = mouse()
 
-	pointer_grid_x = math.floor(mx/SPRITE_SIZE)
-	pointer_grid_y = math.floor(my/SPRITE_SIZE)
+	self.pointer_game_x, self.pointer_game_y = self:game_coords(mx, my)
 
-	if md then
-		player_grid_x = pointer_grid_x
-		player_grid_y = pointer_grid_y
+	if md and self:is_inbounds(self.pointer_game_x, self.pointer_game_y) then
+		self.hero:move(self.pointer_game_x, self.pointer_game_y)
 	end
 end
 
-function draw()
-	cls(0)
-	for i = 0, GRID_SIZE-1 do
-		for j = 0, GRID_SIZE-1 do
-			sprite(1, i*SPRITE_SIZE + i, j*SPRITE_SIZE + j)
+function Game:draw()
+	for i = 0, GRID_SIZE - 1 do
+		for j = 0, GRID_SIZE - 1 do
+			sprite(1, self.screen_x + i * SPRITE_SIZE + i, self.screen_y + j * SPRITE_SIZE + j)
 		end
 	end
 
-	local x, y = screen_coords(player_grid_x, player_grid_y)
+	local x, y = self:screen_coords(self.hero.game_x, self.hero.game_y)
 	sprite(128, x, y, 11)
 
-	x, y = screen_coords(pointer_grid_x, pointer_grid_y)
-	rectb(x-1, y-1, 18, 18, 12)
+	if
+		self.pointer_game_x >= 0
+		and self.pointer_game_y >= 0
+		and self.pointer_game_x < GRID_SIZE
+		and self.pointer_game_y < GRID_SIZE
+	then
+		x, y = self:screen_coords(self.pointer_game_x, self.pointer_game_y)
+		rectb(x - 1, y - 1, 18, 18, 12)
+	end
+end
+
+function Game:is_inbounds(game_x, game_y)
+	return game_x >= 0 and game_y >= 0 and game_x < GRID_SIZE and game_y < GRID_SIZE
+end
+
+function Game:screen_coords(game_x, game_y)
+	-- add the game coords to itself to account for the 1px borders
+	return self.screen_x + game_x * SPRITE_SIZE + game_x, self.screen_y + game_y * SPRITE_SIZE + game_y
+end
+
+function Game:game_coords(screen_x, screen_y)
+	local game_x = math.floor((screen_x - self.screen_x) / (SPRITE_SIZE + 1))
+	local game_y = math.floor((screen_y - self.screen_y) / (SPRITE_SIZE + 1))
+	return game_x, game_y
+end
+
+local game = Game.new(50, 0)
+
+function TIC()
+	cls(0)
+	game:update()
+	game:draw()
 end
 
 function sprite(id, x, y, alpha)
 	alpha = alpha or -1
-	
-	spr(id*2, x, y, alpha)
-	spr(id*2+1, x+8, y, alpha)
-	spr(id*2+16, x, y+8, alpha)
-	spr(id*2+16+1, x+8, y+8, alpha)
-end
 
-function screen_coords(grid_x, grid_y)
-	return grid_x*SPRITE_SIZE+grid_x, grid_y*SPRITE_SIZE+grid_y
+	spr(id * 2, x, y, alpha)
+	spr(id * 2 + 1, x + 8, y, alpha)
+	spr(id * 2 + 16, x, y + 8, alpha)
+	spr(id * 2 + 16 + 1, x + 8, y + 8, alpha)
 end
 
 -- <TILES>
@@ -336,4 +380,3 @@ end
 -- <PALETTE>
 -- 000:1a1c2c5d275db13e53ef7d57ffcd75a7f07038b76425717929366f3b5dc941a6f673eff7f4f4f494b0c2566c86333c57
 -- </PALETTE>
-

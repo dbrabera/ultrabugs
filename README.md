@@ -1,6 +1,6 @@
 # Untitled
 
-Untitled is a game built for the [Game Off 2021](https://itch.io/jam/game-off-2021) game jam using the fantasy computer [TIC-80](https://tic80.com/).
+Untitled is a turn-based strategy game built for the [Game Off 2021](https://itch.io/jam/game-off-2021) game jam using the fantasy computer [TIC-80](https://tic80.com/).
 
 ## Requirements
 
