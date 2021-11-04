@@ -1,4 +1,4 @@
 run:
-	love .
+	love src
 
 .PHONY: run

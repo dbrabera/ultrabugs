@@ -1,7 +1,3 @@
-local GRID_SIZE = 10
-local SPRITE_SIZE = 16
-local SCALE = 4
-
 function tile(name, spriteID, walkable)
 	return {
 		name = name,
@@ -47,7 +43,7 @@ function Hero:move(game_x, game_y)
 	self.game_y = game_y
 end
 
-local Game = {}
+Game = {}
 
 function Game.new(screen_x, screen_y)
 	local self = {}
@@ -80,13 +76,13 @@ function Game:draw()
 	for i = 0, GRID_SIZE - 1 do
 		for j = 0, GRID_SIZE - 1 do
 			local tile = TILES[map[j + 1][i + 1]]
-			drawSprite(tile.spriteID, self.screen_x + i * SPRITE_SIZE, self.screen_y + j * SPRITE_SIZE)
+			sprites:draw(tile.spriteID, self.screen_x + i * SPRITE_SIZE, self.screen_y + j * SPRITE_SIZE)
 		end
 	end
 
 	for _, pos in ipairs(self:allowed_moves(self.hero)) do
 		local x, y = self:screen_coords(pos.x, pos.y)
-		drawSprite(17, x, y, 11)
+		sprites:draw(17, x, y, 11)
 	end
 
 	if self:is_inbounds(self.pointer_game_x, self.pointer_game_y) then
@@ -96,7 +92,7 @@ function Game:draw()
 	end
 
 	local x, y = self:screen_coords(self.hero.game_x, self.hero.game_y)
-	drawSprite(9, x, y, 11)
+	sprites:draw(9, x, y, 11)
 end
 
 function Game:allowed_moves(actor)
@@ -138,43 +134,4 @@ function Game:game_coords(screen_x, screen_y)
 	local game_x = math.floor((screen_x - self.screen_x) / (SPRITE_SIZE + 1))
 	local game_y = math.floor((screen_y - self.screen_y) / (SPRITE_SIZE + 1))
 	return game_x, game_y
-end
-
-local game = Game.new(40, -12)
-
-function love.load()
-	sprites = loadSprites("assets/sprites.png")
-end
-
-function love.update(dt)
-	game:update(dt)
-end
-
-function love.draw()
-	love.graphics.scale(SCALE, SCALE)
-	game:draw()
-end
-
-function loadSprites(path)
-	love.graphics.setDefaultFilter("nearest")
-
-	local img = love.graphics.newImage(path)
-
-	local width, height = img:getDimensions()
-	local quads = {}
-
-	for j = 0, (height / SPRITE_SIZE) - 1 do
-		for i = 0, (width / SPRITE_SIZE) - 1 do
-			table.insert(quads, love.graphics.newQuad(i * SPRITE_SIZE, j * SPRITE_SIZE, SPRITE_SIZE, SPRITE_SIZE, img))
-		end
-	end
-
-	return {
-		img = img,
-		quads = quads,
-	}
-end
-
-function drawSprite(spriteID, x, y)
-	love.graphics.draw(sprites.img, sprites.quads[spriteID], x, y)
 end
