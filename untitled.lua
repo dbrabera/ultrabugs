@@ -3,8 +3,36 @@
 -- desc:   short description
 -- script: lua
 
-local GRID_SIZE = 8
+local GRID_SIZE = 10
 local SPRITE_SIZE = 16
+
+function tile(name, sprite, walkable)
+	return {
+		name = name,
+		sprite = sprite,
+		walkable = walkable,
+	}
+end
+
+local TILES = {
+	tile("ground", 2, true),
+	tile("wall", 4, false),
+	tile("wall", 6, false),
+	tile("wall", 8, false),
+}
+
+local map = {
+	{ 3, 2, 2, 2, 2, 2, 2, 2, 2, 4 },
+	{ 3, 1, 1, 1, 1, 1, 1, 1, 1, 4 },
+	{ 3, 1, 1, 1, 1, 1, 1, 1, 1, 4 },
+	{ 3, 1, 1, 1, 1, 1, 1, 1, 1, 4 },
+	{ 3, 1, 1, 1, 1, 1, 1, 1, 1, 4 },
+	{ 3, 1, 1, 1, 2, 2, 2, 1, 1, 4 },
+	{ 3, 1, 1, 1, 1, 1, 1, 1, 1, 4 },
+	{ 3, 1, 1, 1, 1, 1, 1, 1, 1, 4 },
+	{ 3, 1, 1, 1, 1, 1, 1, 1, 1, 4 },
+	{ 3, 2, 2, 2, 2, 2, 2, 2, 2, 4 },
+}
 
 local Hero = {}
 
@@ -31,7 +59,7 @@ function Game.new(screen_x, screen_y)
 
 	self.screen_x = screen_x
 	self.screen_y = screen_y
-	self.hero = Hero.new(0, 0)
+	self.hero = Hero.new(1, 1)
 	self.pointer_game_x = -1
 	self.pointer_game_y = -1
 
@@ -43,7 +71,7 @@ function Game:update()
 
 	self.pointer_game_x, self.pointer_game_y = self:game_coords(mx, my)
 
-	if md and self:is_inbounds(self.pointer_game_x, self.pointer_game_y) then
+	if md and self:is_walkable(self.pointer_game_x, self.pointer_game_y) then
 		self.hero:move(self.pointer_game_x, self.pointer_game_y)
 	end
 end
@@ -51,22 +79,50 @@ end
 function Game:draw()
 	for i = 0, GRID_SIZE - 1 do
 		for j = 0, GRID_SIZE - 1 do
-			sprite(1, self.screen_x + i * SPRITE_SIZE + i, self.screen_y + j * SPRITE_SIZE + j)
+			local tile = TILES[map[j + 1][i + 1]]
+			sprite(tile.sprite, self.screen_x + i * SPRITE_SIZE, self.screen_y + j * SPRITE_SIZE)
 		end
 	end
 
 	local x, y = self:screen_coords(self.hero.game_x, self.hero.game_y)
-	sprite(128, x, y, 11)
+	sprite(256, x, y, 11)
 
-	if
-		self.pointer_game_x >= 0
-		and self.pointer_game_y >= 0
-		and self.pointer_game_x < GRID_SIZE
-		and self.pointer_game_y < GRID_SIZE
-	then
+	for _, pos in ipairs(self:allowed_moves(self.hero)) do
+		local x, y = self:screen_coords(pos.x, pos.y)
+		sprite(32, x, y, 11)
+	end
+
+	if self:is_inbounds(self.pointer_game_x, self.pointer_game_y) then
 		x, y = self:screen_coords(self.pointer_game_x, self.pointer_game_y)
 		rectb(x - 1, y - 1, 18, 18, 12)
 	end
+end
+
+function Game:allowed_moves(actor)
+	local res = {}
+
+	for _, pos in ipairs({
+		{ -1, 0 },
+		{ -1, -1 },
+		{ -1, 1 },
+		{ 0, -1 },
+		{ 0, 1 },
+		{ 1, 0 },
+		{ 1, -1 },
+		{ 1, 1 },
+	}) do
+		local x, y = actor.game_x + pos[1], actor.game_y + pos[2]
+
+		if self:is_walkable(x, y) then
+			table.insert(res, { x = x, y = y })
+		end
+	end
+
+	return res
+end
+
+function Game:is_walkable(game_x, game_y)
+	return self:is_inbounds(game_x, game_y) and TILES[map[game_y + 1][game_x + 1]].walkable
 end
 
 function Game:is_inbounds(game_x, game_y)
@@ -74,8 +130,7 @@ function Game:is_inbounds(game_x, game_y)
 end
 
 function Game:screen_coords(game_x, game_y)
-	-- add the game coords to itself to account for the 1px borders
-	return self.screen_x + game_x * SPRITE_SIZE + game_x, self.screen_y + game_y * SPRITE_SIZE + game_y
+	return self.screen_x + game_x * SPRITE_SIZE, self.screen_y + game_y * SPRITE_SIZE
 end
 
 function Game:game_coords(screen_x, screen_y)
@@ -84,7 +139,7 @@ function Game:game_coords(screen_x, screen_y)
 	return game_x, game_y
 end
 
-local game = Game.new(50, 0)
+local game = Game.new(50, -12)
 
 function TIC()
 	cls(0)
@@ -95,272 +150,36 @@ end
 function sprite(id, x, y, alpha)
 	alpha = alpha or -1
 
-	spr(id * 2, x, y, alpha)
-	spr(id * 2 + 1, x + 8, y, alpha)
-	spr(id * 2 + 16, x, y + 8, alpha)
-	spr(id * 2 + 16 + 1, x + 8, y + 8, alpha)
+	spr(id, x, y, alpha)
+	spr(id + 1, x + 8, y, alpha)
+	spr(id + 16, x, y + 8, alpha)
+	spr(id + 16 + 1, x + 8, y + 8, alpha)
 end
 
 -- <TILES>
--- 002:5555555555665555555555565556555755765555566555555555556555555675
--- 003:5555555555555655555655555556555575556555555555555556555555575565
--- 004:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
--- 005:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
--- 006:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 007:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 008:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
--- 009:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
--- 010:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 011:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 012:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
--- 013:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
--- 014:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 015:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 018:5555555655565555555565555555555556555556576555675565555655555555
--- 019:5565557555555655555555555555655555665555555765555565555555555555
--- 020:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
--- 021:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
--- 022:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 023:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 024:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
--- 025:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
--- 026:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 027:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 028:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
--- 029:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
--- 030:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 031:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 032:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 033:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 034:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
--- 035:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
--- 036:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 037:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 038:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
--- 039:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
--- 040:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 041:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 042:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
--- 043:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
--- 044:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 045:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 046:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
--- 047:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
--- 048:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 049:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 050:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
--- 051:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
--- 052:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 053:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 054:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
--- 055:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
--- 056:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 057:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 058:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
--- 059:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
--- 060:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 061:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 062:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
--- 063:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
--- 064:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
--- 065:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
--- 066:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 067:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 068:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
--- 069:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
--- 070:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 071:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 072:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
--- 073:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
--- 074:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 075:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 076:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
--- 077:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
--- 078:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 079:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 080:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
--- 081:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
--- 082:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 083:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 084:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
--- 085:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
--- 086:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 087:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 088:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
--- 089:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
--- 090:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 091:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 092:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
--- 093:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
--- 094:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 095:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 096:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 097:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 098:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
--- 099:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
--- 100:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 101:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 102:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
--- 103:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
--- 104:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 105:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 106:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
--- 107:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
--- 108:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 109:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 110:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
--- 111:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
--- 112:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 113:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 114:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
--- 115:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
--- 116:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 117:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 118:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
--- 119:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
--- 120:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 121:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 122:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
--- 123:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
--- 124:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 125:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 126:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
--- 127:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
--- 128:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
--- 129:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
--- 130:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 131:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 132:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
--- 133:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
--- 134:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 135:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 136:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
--- 137:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
--- 138:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 139:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 140:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
--- 141:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
--- 142:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 143:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 144:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
--- 145:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
--- 146:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 147:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 148:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
--- 149:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
--- 150:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 151:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 152:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
--- 153:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
--- 154:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 155:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 156:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
--- 157:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
--- 158:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 159:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 160:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 161:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 162:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
--- 163:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
--- 164:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 165:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 166:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
--- 167:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
--- 168:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 169:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 170:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
--- 171:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
--- 172:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 173:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 174:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
--- 175:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
--- 176:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 177:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 178:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
--- 179:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
--- 180:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 181:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 182:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
--- 183:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
--- 184:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 185:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 186:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
--- 187:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
--- 188:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 189:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 190:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
--- 191:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
--- 192:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
--- 193:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
--- 194:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 195:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 196:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
--- 197:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
--- 198:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 199:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 200:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
--- 201:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
--- 202:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 203:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 204:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
--- 205:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
--- 206:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 207:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 208:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
--- 209:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
--- 210:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 211:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 212:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
--- 213:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
--- 214:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 215:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 216:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
--- 217:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
--- 218:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 219:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 220:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
--- 221:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
--- 222:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 223:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 224:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 225:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 226:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
--- 227:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
--- 228:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 229:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 230:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
--- 231:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
--- 232:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 233:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 234:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
--- 235:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
--- 236:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 237:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 238:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
--- 239:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
--- 240:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 241:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 242:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
--- 243:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
--- 244:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 245:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 246:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
--- 247:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
--- 248:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 249:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 250:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
--- 251:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
--- 252:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 253:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 254:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
--- 255:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
+-- 002:1111111111111111111111111111111111111111111111111111111111111111
+-- 003:1111111011111110111111101111111011111110111111101111111011111110
+-- 004:3333333333333333333333333333333333333333ccccccccffffffffffffffff
+-- 005:3333333233333332333333323333333233333332ccccccccfffffffefffffffe
+-- 007:0003333200033332000333320003333200033332000333320003333200033332
+-- 008:2333300023333000233330002333300023333000233330002333300023333000
+-- 018:1111111111111111111111111111111111111111111111111111111100000000
+-- 019:1111111011111110111111101111111011111110111111101111111000000000
+-- 020:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
+-- 021:fffffffefffffffefffffffefffffffefffffffefffffffefffffffefffffffe
+-- 023:0003333200033332000333320003333200033332000333320003333200033332
+-- 024:2333300023333000233330002333300023333000233330002333300023333000
+-- 032:bbbbbbbbababababbbbbbbbbababababbbbbbbbbababababbbbbbbbbabababab
+-- 033:bbbbbbbbababababbbbbbbbbababababbbbbbbbbababababbbbbbbbbabababab
+-- 048:bbbbbbbbababababbbbbbbbbababababbbbbbbbbababababbbbbbbbbabababab
+-- 049:bbbbbbbbababababbbbbbbbbababababbbbbbbbbababababbbbbbbbbabababab
 -- </TILES>
 
 -- <SPRITES>
--- 000:bbbbbb00bbbbb022bb000222b022f2440122f2440112f2230111ff22b0111fff
--- 001:00bbbbbb220bbbbb222000bb442f220b442f2210322f211022ff1110fff1110b
--- 016:b0ee00000dee0ddd0d0ff0ee0d0ff000b0b0eee0bbb0110bbbb0110bbbbb00bb
--- 017:00000000ddddddddeededee00000000b0eee0bbbb0110bbbb0110bbbbb00bbbb
+-- 000:bbbbbb00bbbbb099bb000999b099f9cc0899f9cc0889f99a0888ff99b0888fff
+-- 001:00bbbbbb990bbbbb999000bbcc9f990bcc9f9980a99f988099ff8880fff8880b
+-- 016:b0ee00000dee0ddd0d0ff0ee0d0ff000b0b0eee0bbb0880bbbb0880bbbbb00bb
+-- 017:00000000ddddddddeededee00000000b0eee0bbbb0880bbbb0880bbbbb00bbbb
 -- </SPRITES>
 
 -- <WAVES>
