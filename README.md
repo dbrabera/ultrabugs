@@ -1,29 +1,16 @@
 # Untitled
 
-Untitled is a turn-based strategy game built for the [Game Off 2021](https://itch.io/jam/game-off-2021) game jam using the fantasy computer [TIC-80](https://tic80.com/).
+Untitled is a tactical turn-based game built for the [Game Off 2021](https://itch.io/jam/game-off-2021) game jam using [LÖVE](https://love2d.org/).
 
 ## Requirements
 
-- TIC-80 v0.90 Pro
+- LÖVE v11.3
+- Aseprite v1.2
 
 ## Development
 
-To load the game into the platform do:
-
-```sh
-$ make load
-```
-
-To directly run it do:
+To run the game do:
 
 ```sh
 $ make run
 ```
-
-To build it and package it as an HTML5 application do:
-
-```sh
-$ make build
-```
-
-This will generate a `.zip` file with all the assets in the `.build` directory.
