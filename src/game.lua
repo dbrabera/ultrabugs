@@ -36,21 +36,21 @@ local ACTION = {
 
 local Hero = {}
 
-function Hero.new(game_x, game_y)
+function Hero.new(gameX, gameY)
 	local self = {}
 	setmetatable(self, { __index = Hero })
 
-	self.game_x = game_x
-	self.game_y = game_y
+	self.gameX = gameX
+	self.gameY = gameY
 	self.meleeDamage = 1
 	self.rangedDamage = 2
 
 	return self
 end
 
-function Hero:move(game_x, game_y)
-	self.game_x = game_x
-	self.game_y = game_y
+function Hero:move(gameX, gameY)
+	self.gameX = gameX
+	self.gameY = gameY
 end
 
 function Hero:hit(actor)
@@ -63,12 +63,12 @@ end
 
 local Bug = {}
 
-function Bug.new(game_x, game_y)
+function Bug.new(gameX, gameY)
 	local self = {}
 	setmetatable(self, { __index = Bug })
 
-	self.game_x = game_x
-	self.game_y = game_y
+	self.gameX = gameX
+	self.gameY = gameY
 	self.health = 2
 
 	return self
@@ -88,19 +88,19 @@ end
 
 Game = {}
 
-function Game.new(screen_x, screen_y)
+function Game.new(screenX, screenY)
 	local self = {}
 	setmetatable(self, { __index = Game })
 
-	self.screen_x = screen_x
-	self.screen_y = screen_y
+	self.screenX = screenX
+	self.screenY = screenY
 	self.hero = Hero.new(2, 2)
 	self.bugs = {
 		Bug.new(2, 4),
 		Bug.new(7, 7),
 	}
-	self.pointer_game_x = -1
-	self.pointer_game_y = -1
+	self.pointer_gameX = -1
+	self.pointer_gameY = -1
 	self.action = ACTION.MOVE
 
 	return self
@@ -121,7 +121,7 @@ function Game:mousepressed(x, y, button)
 		return
 	end
 
-	local gameX, gameY = self:game_coords(x, y)
+	local gameX, gameY = self:gameCoords(x, y)
 
 	if self.action == ACTION.MOVE then
 		if self:canMove(self.hero, gameX, gameY) then
@@ -149,7 +149,7 @@ function Game:mousepressed(x, y, button)
 end
 
 function Game:mousemoved(x, y)
-	self.pointer_game_x, self.pointer_game_y = self:game_coords(x, y)
+	self.pointer_gameX, self.pointer_gameY = self:gameCoords(x, y)
 end
 
 function Game:update(dt) end
@@ -170,27 +170,27 @@ function Game:draw()
 	for i = 0, GRID_SIZE - 1 do
 		for j = 0, GRID_SIZE - 1 do
 			local tile = TILES[map[j + 1][i + 1]]
-			sprites:draw(tile.spriteID, self.screen_x + i * SPRITE_SIZE, self.screen_y + j * SPRITE_SIZE)
+			sprites:draw(tile.spriteID, self.screenX + i * SPRITE_SIZE, self.screenY + j * SPRITE_SIZE)
 		end
 	end
 
 	for _, pos in ipairs(self:allowedActions(self.hero)) do
-		local x, y = self:screen_coords(pos.x, pos.y)
+		local x, y = self:screenCoords(pos.x, pos.y)
 		sprites:draw(17, x, y, 11)
 	end
 
-	if self:is_inbounds(self.pointer_game_x, self.pointer_game_y) then
-		x, y = self:screen_coords(self.pointer_game_x, self.pointer_game_y)
+	if self:isInbounds(self.pointer_gameX, self.pointer_gameY) then
+		x, y = self:screenCoords(self.pointer_gameX, self.pointer_gameY)
 		love.graphics.setColor(255, 255, 255)
 		love.graphics.rectangle("line", x, y, 16, 16)
 	end
 
-	local x, y = self:screen_coords(self.hero.game_x, self.hero.game_y)
+	local x, y = self:screenCoords(self.hero.gameX, self.hero.gameY)
 	sprites:draw(9, x, y, 11)
 
 	for _, bug in ipairs(self.bugs) do
 		if bug:isAlive() then
-			x, y = self:screen_coords(bug.game_x, bug.game_y)
+			x, y = self:screenCoords(bug.gameX, bug.gameY)
 			sprites:draw(25, x, y, 11)
 		end
 	end
@@ -219,7 +219,7 @@ function Game:allowedMoves(actor)
 		{ 1, -1 },
 		{ 1, 1 },
 	}) do
-		local x, y = actor.game_x + pos[1], actor.game_y + pos[2]
+		local x, y = actor.gameX + pos[1], actor.gameY + pos[2]
 
 		if self:isWalkable(x, y) then
 			table.insert(res, { x = x, y = y })
@@ -238,7 +238,7 @@ function Game:allowedHits(actor)
 		{ 0, 1 },
 		{ 1, 0 },
 	}) do
-		local x, y = actor.game_x + pos[1], actor.game_y + pos[2]
+		local x, y = actor.gameX + pos[1], actor.gameY + pos[2]
 
 		if self:isWalkable(x, y) or self:getActorAt(x, y) then
 			table.insert(res, { x = x, y = y })
@@ -261,7 +261,7 @@ function Game:allowedFires(actor)
 		{ 0, 3 },
 		{ 3, 0 },
 	}) do
-		local x, y = actor.game_x + pos[1], actor.game_y + pos[2]
+		local x, y = actor.gameX + pos[1], actor.gameY + pos[2]
 
 		if self:isWalkable(x, y) or self:getActorAt(x, y) then
 			table.insert(res, { x = x, y = y })
@@ -273,7 +273,7 @@ end
 
 function Game:isAllowed(source, target, positions)
 	for _, pos in ipairs(positions) do
-		if target.game_x == pos.x and target.game_y == pos.y then
+		if target.gameX == pos.x and target.gameY == pos.y then
 			return true
 		end
 	end
@@ -281,7 +281,7 @@ function Game:isAllowed(source, target, positions)
 end
 
 function Game:canMove(actor, x, y)
-	return self:isAllowed(actor, { game_x = x, game_y = y }, self:allowedMoves(actor))
+	return self:isAllowed(actor, { gameX = x, gameY = y }, self:allowedMoves(actor))
 end
 
 function Game:canHit(actor, target)
@@ -296,27 +296,27 @@ function Game:isWalkable(gameX, gameY)
 	if self:getActorAt(gameX, gameY) then
 		return false
 	end
-	return self:is_inbounds(gameX, gameY) and TILES[map[gameY + 1][gameX + 1]].walkable
+	return self:isInbounds(gameX, gameY) and TILES[map[gameY + 1][gameX + 1]].walkable
 end
 
 function Game:getActorAt(gameX, gameY)
 	for _, bug in ipairs(self.bugs) do
-		if bug:isAlive() and bug.game_x == gameX and bug.game_y == gameY then
+		if bug:isAlive() and bug.gameX == gameX and bug.gameY == gameY then
 			return bug
 		end
 	end
 end
 
-function Game:is_inbounds(game_x, game_y)
-	return game_x >= 0 and game_y >= 0 and game_x < GRID_SIZE and game_y < GRID_SIZE
+function Game:isInbounds(gameX, gameY)
+	return gameX >= 0 and gameY >= 0 and gameX < GRID_SIZE and gameY < GRID_SIZE
 end
 
-function Game:screen_coords(game_x, game_y)
-	return self.screen_x + game_x * SPRITE_SIZE, self.screen_y + game_y * SPRITE_SIZE
+function Game:screenCoords(gameX, gameY)
+	return self.screenX + gameX * SPRITE_SIZE, self.screenY + gameY * SPRITE_SIZE
 end
 
-function Game:game_coords(screen_x, screen_y)
-	local game_x = math.floor((screen_x - self.screen_x) / (SPRITE_SIZE + 1))
-	local game_y = math.floor((screen_y - self.screen_y) / (SPRITE_SIZE + 1))
-	return game_x, game_y
+function Game:gameCoords(screenX, screenY)
+	local gameX = math.floor((screenX - self.screenX) / SPRITE_SIZE)
+	local gameY = math.floor((screenY - self.screenY) / SPRITE_SIZE)
+	return gameX, gameY
 end
