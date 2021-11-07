@@ -1,33 +1,34 @@
-require("conf")
-require("game")
-require("sprite")
-require("util")
+local conf = require("conf")
+local game = require("game")
+local sprite = require("sprite")
+local util = require("util")
 
-local game = Game.new(40, -12)
+local g = game.Game.new(40, -12)
+local sprites = nil
 
 function love.load()
-	sprites = SpriteAtlas.new("assets/sprites.png")
+	sprites = sprite.SpriteAtlas.new("assets/sprites.png")
 end
 
 function love.update(dt)
-	game:update(dt)
+	g:update(dt)
 end
 
 function love.keypressed(key, scancode, isrepeat)
-	game:keypressed(key)
+	g:keypressed(key)
 end
 
 function love.mousemoved(x, y, dx, dy, istouch)
-	x, y = scaledCoords(x, y, SCALE)
-	game:mousemoved(x, y)
+	x, y = util.scaledCoords(x, y, conf.SCALE)
+	g:mousemoved(x, y)
 end
 
 function love.mousepressed(x, y, button, istouch, presses)
-	x, y = scaledCoords(x, y, SCALE)
-	game:mousepressed(x, y, button)
+	x, y = util.scaledCoords(x, y, conf.SCALE)
+	g:mousepressed(x, y, button)
 end
 
 function love.draw()
-	love.graphics.scale(SCALE, SCALE)
-	game:draw()
+	love.graphics.scale(conf.SCALE, conf.SCALE)
+	g:draw(sprites)
 end

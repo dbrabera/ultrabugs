@@ -1,4 +1,7 @@
+check:
+	luacheck src
+
 run:
 	love src
 
-.PHONY: run
+.PHONY: check run

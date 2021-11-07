@@ -1,4 +1,8 @@
-SpriteAtlas = {}
+local conf = require("conf")
+
+local sprite = {}
+
+local SpriteAtlas = {}
 
 function SpriteAtlas.new(path)
 	local self = {}
@@ -11,11 +15,17 @@ function SpriteAtlas.new(path)
 	local width, height = self.img:getDimensions()
 	self.quads = {}
 
-	for j = 0, (height / SPRITE_SIZE) - 1 do
-		for i = 0, (width / SPRITE_SIZE) - 1 do
+	for j = 0, (height / conf.SPRITE_SIZE) - 1 do
+		for i = 0, (width / conf.SPRITE_SIZE) - 1 do
 			table.insert(
 				self.quads,
-				love.graphics.newQuad(i * SPRITE_SIZE, j * SPRITE_SIZE, SPRITE_SIZE, SPRITE_SIZE, self.img)
+				love.graphics.newQuad(
+					i * conf.SPRITE_SIZE,
+					j * conf.SPRITE_SIZE,
+					conf.SPRITE_SIZE,
+					conf.SPRITE_SIZE,
+					self.img
+				)
 			)
 		end
 	end
@@ -26,3 +36,7 @@ end
 function SpriteAtlas:draw(id, x, y)
 	love.graphics.draw(self.img, self.quads[id], x, y)
 end
+
+sprite.SpriteAtlas = SpriteAtlas
+
+return sprite

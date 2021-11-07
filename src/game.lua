@@ -1,6 +1,8 @@
-require("conf")
+local conf = require("conf")
 
-function tile(name, spriteID, walkable)
+local game = {}
+
+local function tile(name, spriteID, walkable)
 	return {
 		name = name,
 		spriteID = spriteID,
@@ -86,7 +88,7 @@ function Bug:isAlive()
 	return self.health > 0
 end
 
-Game = {}
+local Game = {}
 
 function Game.new(screenX, screenY)
 	local self = {}
@@ -163,14 +165,14 @@ function Game:isGameOver()
 	return true
 end
 
-function Game:draw()
+function Game:draw(sprites)
 	love.graphics.setColor(255, 255, 255)
 	love.graphics.print({ { 255, 255, 255 }, self.action }, 0, 0)
 
-	for i = 0, GRID_SIZE - 1 do
-		for j = 0, GRID_SIZE - 1 do
-			local tile = TILES[map[j + 1][i + 1]]
-			sprites:draw(tile.spriteID, self.screenX + i * SPRITE_SIZE, self.screenY + j * SPRITE_SIZE)
+	for i = 0, conf.GRID_SIZE - 1 do
+		for j = 0, conf.GRID_SIZE - 1 do
+			local t = TILES[map[j + 1][i + 1]]
+			sprites:draw(t.spriteID, self.screenX + i * conf.SPRITE_SIZE, self.screenY + j * conf.SPRITE_SIZE)
 		end
 	end
 
@@ -180,7 +182,7 @@ function Game:draw()
 	end
 
 	if self:isInbounds(self.pointer_gameX, self.pointer_gameY) then
-		x, y = self:screenCoords(self.pointer_gameX, self.pointer_gameY)
+		local x, y = self:screenCoords(self.pointer_gameX, self.pointer_gameY)
 		love.graphics.setColor(255, 255, 255)
 		love.graphics.rectangle("line", x, y, 16, 16)
 	end
@@ -308,15 +310,19 @@ function Game:getActorAt(gameX, gameY)
 end
 
 function Game:isInbounds(gameX, gameY)
-	return gameX >= 0 and gameY >= 0 and gameX < GRID_SIZE and gameY < GRID_SIZE
+	return gameX >= 0 and gameY >= 0 and gameX < conf.GRID_SIZE and gameY < conf.GRID_SIZE
 end
 
 function Game:screenCoords(gameX, gameY)
-	return self.screenX + gameX * SPRITE_SIZE, self.screenY + gameY * SPRITE_SIZE
+	return self.screenX + gameX * conf.SPRITE_SIZE, self.screenY + gameY * conf.SPRITE_SIZE
 end
 
 function Game:gameCoords(screenX, screenY)
-	local gameX = math.floor((screenX - self.screenX) / SPRITE_SIZE)
-	local gameY = math.floor((screenY - self.screenY) / SPRITE_SIZE)
+	local gameX = math.floor((screenX - self.screenX) / conf.SPRITE_SIZE)
+	local gameY = math.floor((screenY - self.screenY) / conf.SPRITE_SIZE)
 	return gameX, gameY
 end
+
+game.Game = Game
+
+return game
