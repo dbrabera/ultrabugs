@@ -1,4 +1,5 @@
 local conf = require("conf")
+local util = require("util")
 
 local game = {}
 
@@ -34,6 +35,11 @@ local ACTION = {
 	MOVE = "move",
 	HIT = "hit",
 	FIRE = "fire",
+}
+
+local STATE = {
+	HERO = "hero",
+	BUGS = "bugs",
 }
 
 local Hero = {}
@@ -76,6 +82,11 @@ function Bug.new(gameX, gameY)
 	return self
 end
 
+function Bug:move(gameX, gameY)
+	self.gameX = gameX
+	self.gameY = gameY
+end
+
 function Bug:takeDamage(damage)
 	if self.health <= damage then
 		self.health = 0
@@ -104,6 +115,7 @@ function Game.new(screenX, screenY)
 	self.pointer_gameX = -1
 	self.pointer_gameY = -1
 	self.action = ACTION.MOVE
+	self.state = STATE.HERO
 
 	return self
 end
@@ -115,6 +127,8 @@ function Game:keypressed(key)
 		self.action = ACTION.HIT
 	elseif key == "3" then
 		self.action = ACTION.FIRE
+	elseif key == "space" then
+		self.state = STATE.BUGS
 	end
 end
 
@@ -154,7 +168,26 @@ function Game:mousemoved(x, y)
 	self.pointer_gameX, self.pointer_gameY = self:gameCoords(x, y)
 end
 
-function Game:update(dt) end
+function Game:update(dt)
+	if self.state == STATE.BUGS then
+		for _, bug in ipairs(self.bugs) do
+			local path = util.findPath(
+				{ x = bug.gameX, y = bug.gameY },
+				{ x = self.hero.gameX, y = self.hero.gameY },
+				function(pos)
+					return self:isWalkable(pos.x, pos.y)
+				end
+			)
+
+			local next = table.remove(path)
+			if self:isWalkable(next.x, next.y) then
+				bug:move(next.x, next.y)
+			end
+		end
+
+		self.state = STATE.HERO
+	end
+end
 
 function Game:isGameOver()
 	for _, bug in ipairs(self.bugs) do
@@ -211,20 +244,9 @@ end
 function Game:allowedMoves(actor)
 	local res = {}
 
-	for _, pos in ipairs({
-		{ -1, 0 },
-		{ -1, -1 },
-		{ -1, 1 },
-		{ 0, -1 },
-		{ 0, 1 },
-		{ 1, 0 },
-		{ 1, -1 },
-		{ 1, 1 },
-	}) do
-		local x, y = actor.gameX + pos[1], actor.gameY + pos[2]
-
-		if self:isWalkable(x, y) then
-			table.insert(res, { x = x, y = y })
+	for _, pos in ipairs(util.neighbors({ x = actor.gameX, y = actor.gameY })) do
+		if self:isWalkable(pos.x, pos.y) then
+			table.insert(res, pos)
 		end
 	end
 
@@ -302,6 +324,9 @@ function Game:isWalkable(gameX, gameY)
 end
 
 function Game:getActorAt(gameX, gameY)
+	if self.hero.gameX == gameX and self.hero.gameY == gameY then
+		return self.hero
+	end
 	for _, bug in ipairs(self.bugs) do
 		if bug:isAlive() and bug.gameX == gameX and bug.gameY == gameY then
 			return bug
