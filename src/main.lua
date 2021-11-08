@@ -3,11 +3,11 @@ local game = require("game")
 local sprite = require("sprite")
 local util = require("util")
 
-local g = game.Game.new(40, -12)
+local g = game.newGame(40, -12)
 local sprites = nil
 
 function love.load()
-	sprites = sprite.SpriteAtlas.new("assets/sprites.png")
+	sprites = sprite.newSpriteAtlas("assets/sprites.png")
 end
 
 function love.update(dt)

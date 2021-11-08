@@ -1,4 +1,4 @@
-local tile = {}
+local tiles = {}
 
 local function defkind(name, spriteID, walkable)
 	return {
@@ -8,11 +8,11 @@ local function defkind(name, spriteID, walkable)
 	}
 end
 
-tile.KIND = {
+tiles.KIND = {
 	defkind("ground", 1, true),
 	defkind("wall", 2, false),
 	defkind("wall", 3, false),
 	defkind("wall", 4, false),
 }
 
-return tile
+return tiles

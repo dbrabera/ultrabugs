@@ -1,6 +1,7 @@
 local conf = require("conf")
-local tile = require("tile")
-local unit = require("unit")
+local enemy = require("enemy")
+local tiles = require("tiles")
+local units = require("units")
 local util = require("util")
 
 local game = {}
@@ -18,160 +19,217 @@ local map = {
 	{ 3, 2, 2, 2, 2, 2, 2, 2, 2, 4 },
 }
 
-local ACTION = {
-	MOVE = "move",
-	HIT = "hit",
-	FIRE = "fire",
+local TURN = {
+	PLAYER = "player",
+	ENEMY = "enemy",
 }
 
-local STATE = {
-	HERO = "hero",
-	BUGS = "bugs",
+local PHASE = {
+	MOVEMENT = "movement",
+	SHOOTING = "shooting",
+	COMBAT = "combat",
 }
 
 local Game = {}
 
-function Game.new(screenX, screenY)
+function game.newGame(screenX, screenY)
 	local self = {}
 	setmetatable(self, { __index = Game })
 
 	self.screenX = screenX
 	self.screenY = screenY
-	self.hero = unit.newUnit(unit.KIND[1], 2, 2)
-	self.bugs = {
-		unit.newUnit(unit.KIND[4], 2, 4),
-		unit.newUnit(unit.KIND[4], 7, 7),
+
+	self.enemy = enemy.newEnemy(self)
+
+	self.playerUnits = {
+		units.newUnit(units.KIND[1], 2, 2),
+		units.newUnit(units.KIND[2], 4, 2),
+		units.newUnit(units.KIND[3], 6, 3),
 	}
-	self.pointer_gameX = -1
-	self.pointer_gameY = -1
-	self.action = ACTION.MOVE
-	self.state = STATE.HERO
+	self.enemyUnits = {
+		units.newUnit(units.KIND[4], 2, 4),
+		units.newUnit(units.KIND[4], 7, 7),
+	}
+	self.selectedUnit = self.playerUnits[1]
+
+	self.cursorGameX = -1
+	self.cursorGameY = -1
+
+	self.turn = TURN.PLAYER
+	self.phase = PHASE.MOVEMENT
 
 	return self
 end
 
 function Game:keypressed(key)
-	if key == "1" then
-		self.action = ACTION.MOVE
-	elseif key == "2" then
-		self.action = ACTION.HIT
-	elseif key == "3" then
-		self.action = ACTION.FIRE
-	elseif key == "space" then
-		self.state = STATE.BUGS
+	if self.turn ~= TURN.PLAYER then
+		return
+	end
+
+	if key == "space" then
+		if self.selectedUnit then
+			self:skipUnitPhase(self.selectedUnit)
+		end
+
+		local unit = self:nextPendingUnit()
+		if unit then
+			self.selectedUnit = unit
+			return
+		end
+
+		if self.phase == PHASE.MOVEMENT then
+			self.phase = PHASE.SHOOTING
+		elseif self.phase == PHASE.SHOOTING then
+			self.phase = PHASE.COMBAT
+		elseif self.phase == PHASE.COMBAT then
+			self.phase = PHASE.MOVEMENT
+			self.turn = TURN.ENEMY
+			for _, unit in ipairs(self.playerUnits) do
+				unit:resetTurn()
+			end
+		end
+	elseif key == "escape" then
+		self.selectedUnit = nil
 	end
 end
 
 function Game:mousepressed(x, y, button)
+	if self.turn ~= TURN.PLAYER then
+		return
+	end
+
+	if button == 2 then
+		self.selectedUnit = nil
+		return
+	end
+
 	if button ~= 1 then
 		return
 	end
 
 	local gameX, gameY = self:gameCoords(x, y)
 
-	if self.action == ACTION.MOVE then
-		if self:canMove(self.hero, gameX, gameY) then
-			self.hero:move(gameX, gameY)
-		end
+	local target = self:getUnitAt(gameX, gameY)
 
+	if target and not target.kind.isEnemy then
+		self.selectedUnit = target
 		return
 	end
 
-	local target = self:getActorAt(gameX, gameY)
-
-	if not target then
+	if not self.selectedUnit then
 		return
 	end
 
-	if self.action == ACTION.HIT then
-		if self:canHit(self.hero, target) then
-			self.hero:hit(target)
+	if self.phase == PHASE.MOVEMENT then
+		if self:canMove(self.selectedUnit, gameX, gameY) then
+			self.selectedUnit:move(gameX, gameY)
 		end
-	elseif self.action == ACTION.FIRE then
-		if self:canFire(self.hero, target) then
-			self.hero:shoot(target)
+		return
+	end
+
+	if not target or not target.kind.isEnemy then
+		return
+	end
+
+	if self.phase == PHASE.SHOOTING then
+		if self:canShoot(self.selectedUnit, target) then
+			self.selectedUnit:shoot(target)
+		end
+	elseif self.phase == PHASE.COMBAT then
+		if self:canHit(self.selectedUnit, target) then
+			self.selectedUnit:hit(target)
 		end
 	end
 end
 
 function Game:mousemoved(x, y)
-	self.pointer_gameX, self.pointer_gameY = self:gameCoords(x, y)
+	self.cursorGameX, self.cursorGameY = self:gameCoords(x, y)
 end
 
 function Game:update(dt)
-	if self.state == STATE.BUGS then
-		for _, bug in ipairs(self.bugs) do
-			local path = util.findPath(
-				{ x = bug.gameX, y = bug.gameY },
-				{ x = self.hero.gameX, y = self.hero.gameY },
-				function(pos)
-					return self:isWalkable(pos.x, pos.y)
-				end
-			)
-
-			local next = table.remove(path)
-			if self:isWalkable(next.x, next.y) then
-				bug:move(next.x, next.y)
-			end
-		end
-
-		self.state = STATE.HERO
+	if self.turn ~= TURN.ENEMY then
+		return
 	end
-end
 
-function Game:isGameOver()
-	for _, bug in ipairs(self.bugs) do
-		if bug:isAlive() then
-			return false
-		end
+	self.enemy:takeTurn()
+	for _, unit in ipairs(self.enemyUnits) do
+		unit:resetTurn()
 	end
-	return true
+
+	self.turn = TURN.PLAYER
 end
 
 function Game:draw(sprites)
-	love.graphics.setColor(255, 255, 255)
-	love.graphics.print({ { 255, 255, 255 }, self.action }, 0, 0)
-
 	for i = 0, conf.GRID_SIZE - 1 do
 		for j = 0, conf.GRID_SIZE - 1 do
-			local t = tile.KIND[map[j + 1][i + 1]]
+			local t = tiles.KIND[map[j + 1][i + 1]]
 			sprites:draw(t.spriteID, self.screenX + i * conf.SPRITE_SIZE, self.screenY + j * conf.SPRITE_SIZE)
 		end
 	end
 
-	for _, pos in ipairs(self:allowedActions(self.hero)) do
-		local x, y = self:screenCoords(pos.x, pos.y)
-		sprites:draw(17, x, y, 11)
-	end
+	local playerUnit = self.selectedUnit
 
-	if self:isInbounds(self.pointer_gameX, self.pointer_gameY) then
-		local x, y = self:screenCoords(self.pointer_gameX, self.pointer_gameY)
-		love.graphics.setColor(255, 255, 255)
-		love.graphics.rectangle("line", x, y, 16, 16)
-	end
-
-	local x, y = self:screenCoords(self.hero.gameX, self.hero.gameY)
-	sprites:draw(9, x, y, 11)
-
-	for _, bug in ipairs(self.bugs) do
-		if bug:isAlive() then
-			x, y = self:screenCoords(bug.gameX, bug.gameY)
-			sprites:draw(25, x, y, 11)
+	if not playerUnit then
+		local hooveredUnit = self:getUnitAt(self.cursorGameX, self.cursorGameY)
+		if hooveredUnit and not hooveredUnit.kind.isEnemy then
+			playerUnit = hooveredUnit
 		end
 	end
+
+	if playerUnit then
+		for _, pos in ipairs(self:allowedActions(playerUnit)) do
+			local x, y = self:screenCoords(pos.x, pos.y)
+			sprites:draw(17, x, y)
+		end
+	end
+
+	if self:isInbounds(self.cursorGameX, self.cursorGameY) then
+		local x, y = self:screenCoords(self.cursorGameX, self.cursorGameY)
+		util.drawRectangle("line", x, y, 16, 16, 255, 255, 255)
+	end
+
+	if self.selectedUnit then
+		local x, y = self:screenCoords(self.selectedUnit.gameX, self.selectedUnit.gameY)
+		util.drawRectangle("line", x, y, 16, 16, 153, 229, 80)
+	end
+
+	for _, unit in ipairs(self.playerUnits) do
+		if unit:isAlive() then
+			local x, y = self:screenCoords(unit.gameX, unit.gameY)
+			sprites:draw(unit.kind.spriteID, x, y)
+
+			if self:isPendingUnit(unit) then
+				sprites:draw(18, x, y - conf.SPRITE_SIZE)
+			end
+		end
+	end
+
+	for _, unit in ipairs(self.enemyUnits) do
+		if unit:isAlive() then
+			local x, y = self:screenCoords(unit.gameX, unit.gameY)
+			sprites:draw(unit.kind.spriteID, x, y)
+		end
+	end
+
+	love.graphics.setColor(255, 255, 255)
+	love.graphics.print({ { 255, 255, 255 }, self.phase }, 0, 0)
 end
 
 function Game:allowedActions(actor)
-	if self.action == ACTION.MOVE then
-		return self:allowedMoves(actor)
-	elseif self.action == ACTION.HIT then
+	if self.phase == PHASE.MOVEMENT then
+		return self:allowedMovements(actor)
+	elseif self.phase == PHASE.COMBAT then
 		return self:allowedHits(actor)
-	elseif self.action == ACTION.FIRE then
-		return self:allowedFires(actor)
+	elseif self.phase == PHASE.SHOOTING then
+		return self:allowedShoots(actor)
 	end
 end
 
-function Game:allowedMoves(actor)
+function Game:allowedMovements(actor)
+	if actor.hasMoved then
+		return {}
+	end
+
 	local res = {}
 
 	for _, pos in ipairs(util.neighbors({ x = actor.gameX, y = actor.gameY })) do
@@ -184,6 +242,10 @@ function Game:allowedMoves(actor)
 end
 
 function Game:allowedHits(actor)
+	if actor.hasHit then
+		return {}
+	end
+
 	local res = {}
 
 	for _, pos in ipairs({
@@ -194,7 +256,7 @@ function Game:allowedHits(actor)
 	}) do
 		local x, y = actor.gameX + pos[1], actor.gameY + pos[2]
 
-		if self:isWalkable(x, y) or self:getActorAt(x, y) then
+		if self:isWalkable(x, y) or self:getUnitAt(x, y) then
 			table.insert(res, { x = x, y = y })
 		end
 	end
@@ -202,7 +264,11 @@ function Game:allowedHits(actor)
 	return res
 end
 
-function Game:allowedFires(actor)
+function Game:allowedShoots(actor)
+	if actor.hasShot then
+		return {}
+	end
+
 	local res = {}
 
 	for _, pos in ipairs({
@@ -217,7 +283,7 @@ function Game:allowedFires(actor)
 	}) do
 		local x, y = actor.gameX + pos[1], actor.gameY + pos[2]
 
-		if self:isWalkable(x, y) or self:getActorAt(x, y) then
+		if self:isWalkable(x, y) or self:getUnitAt(x, y) then
 			table.insert(res, { x = x, y = y })
 		end
 	end
@@ -235,31 +301,57 @@ function Game:isAllowed(source, target, positions)
 end
 
 function Game:canMove(actor, x, y)
-	return self:isAllowed(actor, { gameX = x, gameY = y }, self:allowedMoves(actor))
+	return self:isAllowed(actor, { gameX = x, gameY = y }, self:allowedMovements(actor))
 end
 
 function Game:canHit(actor, target)
 	return self:isAllowed(actor, target, self:allowedHits(actor))
 end
 
-function Game:canFire(actor, target)
-	return self:isAllowed(actor, target, self:allowedFires(actor))
+function Game:canShoot(actor, target)
+	return self:isAllowed(actor, target, self:allowedShoots(actor))
 end
 
 function Game:isWalkable(gameX, gameY)
-	if self:getActorAt(gameX, gameY) then
+	if self:getUnitAt(gameX, gameY) then
 		return false
 	end
-	return self:isInbounds(gameX, gameY) and tile.KIND[map[gameY + 1][gameX + 1]].walkable
+	return self:isInbounds(gameX, gameY) and tiles.KIND[map[gameY + 1][gameX + 1]].walkable
 end
 
-function Game:getActorAt(gameX, gameY)
-	if self.hero.gameX == gameX and self.hero.gameY == gameY then
-		return self.hero
+function Game:skipUnitPhase(unit)
+	if self.phase == PHASE.MOVEMENT then
+		unit.hasMoved = true
+	elseif self.phase == PHASE.SHOOTING then
+		unit.hasShot = true
+	elseif self.phase == PHASE.COMBAT then
+		unit.hasHit = true
 	end
-	for _, bug in ipairs(self.bugs) do
-		if bug:isAlive() and bug.gameX == gameX and bug.gameY == gameY then
-			return bug
+end
+
+function Game:isPendingUnit(unit)
+	if self.turn ~= TURN.PLAYER then
+		return false
+	end
+
+	if self.phase == PHASE.MOVEMENT then
+		return not unit.hasMoved
+	elseif self.phase == PHASE.SHOOTING then
+		return not unit.hasShot
+	elseif self.phase == PHASE.COMBAT then
+		return not unit.hasHit
+	end
+end
+
+function Game:getUnitAt(gameX, gameY)
+	for _, unit in ipairs(self.playerUnits) do
+		if unit:isAlive() and unit.gameX == gameX and unit.gameY == gameY then
+			return unit
+		end
+	end
+	for _, unit in ipairs(self.enemyUnits) do
+		if unit:isAlive() and unit.gameX == gameX and unit.gameY == gameY then
+			return unit
 		end
 	end
 end
@@ -278,6 +370,13 @@ function Game:gameCoords(screenX, screenY)
 	return gameX, gameY
 end
 
-game.Game = Game
+function Game:nextPendingUnit()
+	for _, unit in ipairs(self.playerUnits) do
+		if self:isPendingUnit(unit) then
+			return unit
+		end
+	end
+	return nil
+end
 
 return game

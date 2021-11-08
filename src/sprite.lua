@@ -4,7 +4,7 @@ local sprite = {}
 
 local SpriteAtlas = {}
 
-function SpriteAtlas.new(path)
+function sprite.newSpriteAtlas(path)
 	local self = {}
 	setmetatable(self, { __index = SpriteAtlas })
 
@@ -34,9 +34,8 @@ function SpriteAtlas.new(path)
 end
 
 function SpriteAtlas:draw(id, x, y)
+	love.graphics.setColor(1, 1, 1)
 	love.graphics.draw(self.img, self.quads[id], x, y)
 end
-
-sprite.SpriteAtlas = SpriteAtlas
 
 return sprite

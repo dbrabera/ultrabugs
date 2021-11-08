@@ -9,7 +9,7 @@ local Queue = {}
 
 --- Creates a new FIFO queue.
 -- From: https://www.lua.org/pil/11.4.html
-function Queue.new(elems)
+function util.newQueue(elems)
 	local self = {}
 	setmetatable(self, { __index = Queue })
 
@@ -58,13 +58,9 @@ function util.neighbors(pos)
 
 	for _, delta in ipairs({
 		{ -1, 0 },
-		{ -1, -1 },
-		{ -1, 1 },
 		{ 0, -1 },
 		{ 0, 1 },
 		{ 1, 0 },
-		{ 1, -1 },
-		{ 1, 1 },
 	}) do
 		table.insert(res, { x = pos.x + delta[1], y = pos.y + delta[2] })
 	end
@@ -78,9 +74,9 @@ end
 --
 -- From: https://www.redblobgames.com/pathfinding/a-star/introduction.html
 function util.findPath(src, dst, isWalkable)
-	local frontier = util.Queue.new({ src })
+	local frontier = util.newQueue({ src })
 	local cameFrom = {}
-	print(frontier:len())
+
 	while frontier:len() > 0 do
 		local curr = frontier:get()
 
@@ -112,6 +108,10 @@ function util.findPath(src, dst, isWalkable)
 	return path
 end
 
-util.Queue = Queue
+--- Draws a rectangle with the given color
+function util.drawRectangle(mode, x, y, w, h, r, g, b)
+	love.graphics.setColor(r / 255, g / 255, b / 255)
+	love.graphics.rectangle(mode, x, y, w, h)
+end
 
 return util
