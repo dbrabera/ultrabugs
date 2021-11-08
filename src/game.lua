@@ -1,22 +1,9 @@
 local conf = require("conf")
+local tile = require("tile")
+local unit = require("unit")
 local util = require("util")
 
 local game = {}
-
-local function tile(name, spriteID, walkable)
-	return {
-		name = name,
-		spriteID = spriteID,
-		walkable = walkable,
-	}
-end
-
-local TILES = {
-	tile("ground", 1, true),
-	tile("wall", 2, false),
-	tile("wall", 3, false),
-	tile("wall", 4, false),
-}
 
 local map = {
 	{ 3, 2, 2, 2, 2, 2, 2, 2, 2, 4 },
@@ -42,63 +29,6 @@ local STATE = {
 	BUGS = "bugs",
 }
 
-local Hero = {}
-
-function Hero.new(gameX, gameY)
-	local self = {}
-	setmetatable(self, { __index = Hero })
-
-	self.gameX = gameX
-	self.gameY = gameY
-	self.meleeDamage = 1
-	self.rangedDamage = 2
-
-	return self
-end
-
-function Hero:move(gameX, gameY)
-	self.gameX = gameX
-	self.gameY = gameY
-end
-
-function Hero:hit(actor)
-	actor:takeDamage(self.meleeDamage)
-end
-
-function Hero:fire(actor)
-	actor:takeDamage(self.rangedDamage)
-end
-
-local Bug = {}
-
-function Bug.new(gameX, gameY)
-	local self = {}
-	setmetatable(self, { __index = Bug })
-
-	self.gameX = gameX
-	self.gameY = gameY
-	self.health = 2
-
-	return self
-end
-
-function Bug:move(gameX, gameY)
-	self.gameX = gameX
-	self.gameY = gameY
-end
-
-function Bug:takeDamage(damage)
-	if self.health <= damage then
-		self.health = 0
-	else
-		self.health = self.health - damage
-	end
-end
-
-function Bug:isAlive()
-	return self.health > 0
-end
-
 local Game = {}
 
 function Game.new(screenX, screenY)
@@ -107,10 +37,10 @@ function Game.new(screenX, screenY)
 
 	self.screenX = screenX
 	self.screenY = screenY
-	self.hero = Hero.new(2, 2)
+	self.hero = unit.newUnit(unit.KIND[1], 2, 2)
 	self.bugs = {
-		Bug.new(2, 4),
-		Bug.new(7, 7),
+		unit.newUnit(unit.KIND[4], 2, 4),
+		unit.newUnit(unit.KIND[4], 7, 7),
 	}
 	self.pointer_gameX = -1
 	self.pointer_gameY = -1
@@ -159,7 +89,7 @@ function Game:mousepressed(x, y, button)
 		end
 	elseif self.action == ACTION.FIRE then
 		if self:canFire(self.hero, target) then
-			self.hero:fire(target)
+			self.hero:shoot(target)
 		end
 	end
 end
@@ -204,7 +134,7 @@ function Game:draw(sprites)
 
 	for i = 0, conf.GRID_SIZE - 1 do
 		for j = 0, conf.GRID_SIZE - 1 do
-			local t = TILES[map[j + 1][i + 1]]
+			local t = tile.KIND[map[j + 1][i + 1]]
 			sprites:draw(t.spriteID, self.screenX + i * conf.SPRITE_SIZE, self.screenY + j * conf.SPRITE_SIZE)
 		end
 	end
@@ -320,7 +250,7 @@ function Game:isWalkable(gameX, gameY)
 	if self:getActorAt(gameX, gameY) then
 		return false
 	end
-	return self:isInbounds(gameX, gameY) and TILES[map[gameY + 1][gameX + 1]].walkable
+	return self:isInbounds(gameX, gameY) and tile.KIND[map[gameY + 1][gameX + 1]].walkable
 end
 
 function Game:getActorAt(gameX, gameY)
