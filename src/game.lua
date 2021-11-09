@@ -191,7 +191,15 @@ function Game:draw(sprites)
 	if playerUnit then
 		for _, pos in ipairs(self:allowedActions(playerUnit)) do
 			local x, y = self:screenCoords(pos.x, pos.y)
-			sprites:draw(17, x, y)
+
+			local color = conf.LIME
+			if self.phase == PHASE.SHOOTING then
+				color = conf.YELLOW
+			elseif self.phase == PHASE.COMBAT then
+				color = conf.RED
+			end
+
+			util.drawRectangle("fill", x, y, 16, 16, color, 0.4)
 		end
 	end
 

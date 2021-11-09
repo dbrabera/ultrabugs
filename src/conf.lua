@@ -7,6 +7,8 @@ conf.SCALE = 4
 conf.WHITE = { 255, 255, 255 }
 conf.BLACK = { 0, 0, 0 }
 conf.LIME = { 153, 229, 80 }
+conf.YELLOW = { 251, 242, 54 }
+conf.RED = { 172, 50, 50 }
 
 function love.conf(t)
 	t.window.width = 240 * conf.SCALE

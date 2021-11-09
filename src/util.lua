@@ -114,8 +114,12 @@ function util.drawText(text, color, x, y)
 end
 
 --- Draws a rectangle with the given color
-function util.drawRectangle(mode, x, y, w, h, color)
-	love.graphics.setColor(color[1] / 255, color[2] / 255, color[3] / 255)
+function util.drawRectangle(mode, x, y, w, h, color, alpha)
+	if not alpha then
+		alpha = 1
+	end
+
+	love.graphics.setColor(color[1] / 255, color[2] / 255, color[3] / 255, alpha)
 	love.graphics.rectangle(mode, x, y, w, h)
 end
 
