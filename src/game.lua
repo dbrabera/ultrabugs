@@ -71,25 +71,35 @@ function Game:keypressed(key)
 			self:skipUnitPhase(self.selectedUnit)
 		end
 
-		local unit = self:nextPendingUnit()
-		if unit then
-			self.selectedUnit = unit
+		self.selectedUnit = self:nextPendingUnit()
+		if self.selectedUnit then
 			return
 		end
 
 		if self.phase == PHASE.MOVEMENT then
 			self.phase = PHASE.SHOOTING
+			self.selectedUnit = self:nextPendingUnit()
 		elseif self.phase == PHASE.SHOOTING then
 			self.phase = PHASE.COMBAT
-		elseif self.phase == PHASE.COMBAT then
-			self.phase = PHASE.MOVEMENT
-			self.turn = TURN.ENEMY
-			for _, unit in ipairs(self.playerUnits) do
-				unit:resetTurn()
+			self.selectedUnit = self:nextPendingUnit()
+			if not self.selectedUnit then
+				self:endPlayerTurn()
 			end
+		elseif self.phase == PHASE.COMBAT then
+			self:endPlayerTurn()
 		end
+
+		return
 	elseif key == "escape" then
 		self.selectedUnit = nil
+	end
+end
+
+function Game:endPlayerTurn()
+	self.phase = PHASE.MOVEMENT
+	self.turn = TURN.ENEMY
+	for _, unit in ipairs(self.playerUnits) do
+		unit:resetTurn()
 	end
 end
 
@@ -157,6 +167,7 @@ function Game:update(dt)
 	end
 
 	self.turn = TURN.PLAYER
+	self.selectedUnit = self:nextPendingUnit()
 end
 
 function Game:draw(sprites)
@@ -257,24 +268,24 @@ function Game:drawHealthbar(x, y, health, maxHealth, centered)
 	end
 end
 
-function Game:allowedActions(actor)
+function Game:allowedActions(unit)
 	if self.phase == PHASE.MOVEMENT then
-		return self:allowedMovements(actor)
+		return self:allowedMovements(unit)
 	elseif self.phase == PHASE.COMBAT then
-		return self:allowedHits(actor)
+		return self:allowedHits(unit)
 	elseif self.phase == PHASE.SHOOTING then
-		return self:allowedShoots(actor)
+		return self:allowedShots(unit)
 	end
 end
 
-function Game:allowedMovements(actor)
-	if actor.hasMoved then
+function Game:allowedMovements(unit)
+	if unit.hasMoved then
 		return {}
 	end
 
 	local res = {}
 
-	for _, pos in ipairs(util.neighbors({ x = actor.gameX, y = actor.gameY })) do
+	for _, pos in ipairs(util.neighbors({ x = unit.gameX, y = unit.gameY })) do
 		if self:isWalkable(pos.x, pos.y) then
 			table.insert(res, pos)
 		end
@@ -283,8 +294,8 @@ function Game:allowedMovements(actor)
 	return res
 end
 
-function Game:allowedHits(actor)
-	if actor.hasHit then
+function Game:allowedHits(unit)
+	if unit.hasHit then
 		return {}
 	end
 
@@ -296,9 +307,9 @@ function Game:allowedHits(actor)
 		{ 0, 1 },
 		{ 1, 0 },
 	}) do
-		local x, y = actor.gameX + pos[1], actor.gameY + pos[2]
+		local x, y = unit.gameX + pos[1], unit.gameY + pos[2]
 
-		if self:isWalkable(x, y) or self:getUnitAt(x, y) then
+		if self:getUnitAt(x, y) then
 			table.insert(res, { x = x, y = y })
 		end
 	end
@@ -306,7 +317,7 @@ function Game:allowedHits(actor)
 	return res
 end
 
-function Game:allowedShoots(unit)
+function Game:allowedShots(unit)
 	if unit.hasShot then
 		return {}
 	end
@@ -342,16 +353,26 @@ function Game:isAllowed(source, target, positions)
 	return false
 end
 
-function Game:canMove(actor, x, y)
-	return self:isAllowed(actor, { gameX = x, gameY = y }, self:allowedMovements(actor))
+function Game:canMove(unit, x, y)
+	return self:isAllowed(unit, { gameX = x, gameY = y }, self:allowedMovements(unit))
 end
 
-function Game:canHit(actor, target)
-	return self:isAllowed(actor, target, self:allowedHits(actor))
+function Game:canHit(unit, target)
+	return self:isAllowed(unit, target, self:allowedHits(unit))
 end
 
-function Game:canShoot(actor, target)
-	return self:isAllowed(actor, target, self:allowedShoots(actor))
+function Game:canShoot(unit, target)
+	return self:isAllowed(unit, target, self:allowedShots(unit))
+end
+
+function Game:isInCombat(unit)
+	for _, pos in ipairs(self:allowedHits(unit)) do
+		local target = self:getUnitAt(pos.x, pos.y)
+		if target and target.kind.isEnemy then
+			return true
+		end
+	end
+	return false
 end
 
 function Game:isWalkable(gameX, gameY)
@@ -376,12 +397,14 @@ function Game:isPendingUnit(unit)
 		return false
 	end
 
+	local isInCombat = self:isInCombat(unit)
+
 	if self.phase == PHASE.MOVEMENT then
 		return not unit.hasMoved
 	elseif self.phase == PHASE.SHOOTING then
-		return not unit.hasShot
+		return not unit.hasShot and not isInCombat
 	elseif self.phase == PHASE.COMBAT then
-		return not unit.hasHit
+		return not unit.hasHit and isInCombat
 	end
 end
 
