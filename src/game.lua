@@ -167,12 +167,13 @@ function Game:draw(sprites)
 		end
 	end
 
+	local hoveredUnit = self:getUnitAt(self.cursorGameX, self.cursorGameY)
+
 	local playerUnit = self.selectedUnit
 
 	if not playerUnit then
-		local hooveredUnit = self:getUnitAt(self.cursorGameX, self.cursorGameY)
-		if hooveredUnit and not hooveredUnit.kind.isEnemy then
-			playerUnit = hooveredUnit
+		if hoveredUnit and not hoveredUnit.kind.isEnemy then
+			playerUnit = hoveredUnit
 		end
 	end
 
@@ -185,34 +186,75 @@ function Game:draw(sprites)
 
 	if self:isInbounds(self.cursorGameX, self.cursorGameY) then
 		local x, y = self:screenCoords(self.cursorGameX, self.cursorGameY)
-		util.drawRectangle("line", x, y, 16, 16, 255, 255, 255)
+		util.drawRectangle("line", x, y, 16, 16, conf.WHITE)
 	end
 
 	if self.selectedUnit then
 		local x, y = self:screenCoords(self.selectedUnit.gameX, self.selectedUnit.gameY)
-		util.drawRectangle("line", x, y, 16, 16, 153, 229, 80)
+		util.drawRectangle("line", x, y, 16, 16, conf.LIME)
 	end
 
 	for _, unit in ipairs(self.playerUnits) do
-		if unit:isAlive() then
-			local x, y = self:screenCoords(unit.gameX, unit.gameY)
-			sprites:draw(unit.kind.spriteID, x, y)
-
-			if self:isPendingUnit(unit) then
-				sprites:draw(18, x, y - conf.SPRITE_SIZE)
-			end
-		end
+		self:drawUnit(sprites, unit)
 	end
 
 	for _, unit in ipairs(self.enemyUnits) do
-		if unit:isAlive() then
-			local x, y = self:screenCoords(unit.gameX, unit.gameY)
-			sprites:draw(unit.kind.spriteID, x, y)
-		end
+		self:drawUnit(sprites, unit)
 	end
 
-	love.graphics.setColor(255, 255, 255)
-	love.graphics.print({ { 255, 255, 255 }, self.phase }, 0, 0)
+	-- draw the indicators after the units to ensure that the overlap
+
+	for _, unit in ipairs(self.playerUnits) do
+		self:drawUnitIndicators(sprites, unit, unit == self.selectedUnit or unit == hoveredUnit)
+	end
+
+	for _, unit in ipairs(self.enemyUnits) do
+		self:drawUnitIndicators(sprites, unit, unit == self.selectedUnit or unit == hoveredUnit)
+	end
+
+	util.drawText(self.phase, conf.WHITE, 0, 0)
+end
+
+function Game:drawUnit(sprites, unit)
+	if not unit:isAlive() then
+		return
+	end
+
+	local x, y = self:screenCoords(unit.gameX, unit.gameY)
+	sprites:draw(unit.kind.spriteID, x, y)
+
+	if unit.kind.isEnemy then
+		return
+	end
+end
+
+function Game:drawUnitIndicators(sprites, unit, withHealthBar)
+	local x, y = self:screenCoords(unit.gameX, unit.gameY)
+
+	if withHealthBar then
+		self:drawHealthbar(x + (conf.SPRITE_SIZE / 2), y, unit.health, unit.kind.maxHealth, true)
+	end
+
+	if self:isPendingUnit(unit) then
+		sprites:draw(18, x, y - conf.SPRITE_SIZE - (withHealthBar and 9 or 0))
+	end
+end
+
+function Game:drawHealthbar(x, y, health, maxHealth, centered)
+	local w = 4 * maxHealth + 1 - (1 * (maxHealth - 1))
+
+	if centered then
+		x = x - (w / 2)
+	end
+
+	util.drawRectangle("fill", x, y - 8, 4 * health, 5, conf.BLACK)
+	util.drawRectangle("line", x, y - 8, w, 5, conf.WHITE)
+
+	for i = 1, health do
+		local xi, yi = x + 3 * (i - 1) + 1, y - 7
+		util.drawRectangle("fill", xi, yi, 3, 3, conf.LIME)
+		util.drawRectangle("line", xi, yi, 3, 3, conf.BLACK)
+	end
 end
 
 function Game:allowedActions(actor)
@@ -264,8 +306,8 @@ function Game:allowedHits(actor)
 	return res
 end
 
-function Game:allowedShoots(actor)
-	if actor.hasShot then
+function Game:allowedShoots(unit)
+	if unit.hasShot then
 		return {}
 	end
 
@@ -281,7 +323,7 @@ function Game:allowedShoots(actor)
 		{ 0, 3 },
 		{ 3, 0 },
 	}) do
-		local x, y = actor.gameX + pos[1], actor.gameY + pos[2]
+		local x, y = unit.gameX + pos[1], unit.gameY + pos[2]
 
 		if self:isWalkable(x, y) or self:getUnitAt(x, y) then
 			table.insert(res, { x = x, y = y })
@@ -330,7 +372,7 @@ function Game:skipUnitPhase(unit)
 end
 
 function Game:isPendingUnit(unit)
-	if self.turn ~= TURN.PLAYER then
+	if self.turn ~= TURN.PLAYER or unit.kind.isEnemy then
 		return false
 	end
 

@@ -108,9 +108,14 @@ function util.findPath(src, dst, isWalkable)
 	return path
 end
 
+function util.drawText(text, color, x, y)
+	love.graphics.setColor(color[1] / 255, color[2] / 255, color[3] / 255)
+	love.graphics.print(text, x, y)
+end
+
 --- Draws a rectangle with the given color
-function util.drawRectangle(mode, x, y, w, h, r, g, b)
-	love.graphics.setColor(r / 255, g / 255, b / 255)
+function util.drawRectangle(mode, x, y, w, h, color)
+	love.graphics.setColor(color[1] / 255, color[2] / 255, color[3] / 255)
 	love.graphics.rectangle(mode, x, y, w, h)
 end
 

@@ -1,10 +1,10 @@
 local unit = {}
 
-local function defkind(spriteID, name, health, combatDamage, rangedDamage, isEnemy)
+local function defkind(spriteID, name, maxHealth, combatDamage, rangedDamage, isEnemy)
 	return {
 		spriteID = spriteID,
 		name = name,
-		health = health,
+		maxHealth = maxHealth,
 		combatDamage = combatDamage,
 		rangedDamage = rangedDamage,
 		isEnemy = isEnemy,
@@ -15,7 +15,7 @@ unit.KIND = {
 	defkind(9, "marine", 2, 1, 2, false),
 	defkind(10, "marine captain", 2, 2, 2, false),
 	defkind(11, "marine", 2, 1, 1, false),
-	defkind(25, "bug", 2, 1, 0, true),
+	defkind(25, "bug", 1, 1, 0, true),
 }
 
 local Unit = {}
@@ -25,7 +25,7 @@ function unit.newUnit(kind, gameX, gameY)
 	setmetatable(self, { __index = Unit })
 
 	self.kind = kind
-	self.health = kind.health
+	self.health = kind.maxHealth
 
 	self.gameX = gameX
 	self.gameY = gameY
