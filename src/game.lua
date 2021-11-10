@@ -230,8 +230,6 @@ function Game:draw(sprites)
 	for _, unit in ipairs(self.enemyUnits) do
 		self:drawUnitIndicators(sprites, unit, unit == self.selectedUnit or unit == hoveredUnit)
 	end
-
-	util.drawText(self.phase, conf.WHITE, 0, 0)
 end
 
 function Game:drawUnit(sprites, unit)
@@ -450,6 +448,24 @@ function Game:nextPendingUnit()
 		end
 	end
 	return nil
+end
+
+function Game:isVictory()
+	for _, unit in ipairs(self.enemyUnits) do
+		if unit:isAlive() then
+			return false
+		end
+	end
+	return true
+end
+
+function Game:isGameOver()
+	for _, unit in ipairs(self.playerUnits) do
+		if unit:isAlive() then
+			return false
+		end
+	end
+	return true
 end
 
 return game

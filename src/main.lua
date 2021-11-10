@@ -1,34 +1,32 @@
 local conf = require("conf")
-local game = require("game")
-local sprite = require("sprite")
+local engine = require("engine")
 local util = require("util")
 
-local g = game.newGame(40, -12)
-local sprites = nil
+local eng = engine.newEngine()
 
 function love.load()
-	sprites = sprite.newSpriteAtlas("assets/sprites.png")
+	eng:load()
 end
 
 function love.update(dt)
-	g:update(dt)
+	eng:update(dt)
 end
 
-function love.keypressed(key, scancode, isrepeat)
-	g:keypressed(key)
+function love.keypressed(key)
+	eng:keypressed(key)
 end
 
-function love.mousemoved(x, y, dx, dy, istouch)
+function love.mousemoved(x, y)
 	x, y = util.scaledCoords(x, y, conf.SCALE)
-	g:mousemoved(x, y)
+	eng:mousemoved(x, y)
 end
 
-function love.mousepressed(x, y, button, istouch, presses)
+function love.mousepressed(x, y, button)
 	x, y = util.scaledCoords(x, y, conf.SCALE)
-	g:mousepressed(x, y, button)
+	eng:mousepressed(x, y, button)
 end
 
 function love.draw()
 	love.graphics.scale(conf.SCALE, conf.SCALE)
-	g:draw(sprites)
+	eng:draw()
 end
