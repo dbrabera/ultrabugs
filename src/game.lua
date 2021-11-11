@@ -351,7 +351,7 @@ function Game:allowedShots(unit)
 	return res
 end
 
-function Game:isAllowed(source, target, positions)
+function Game:isAllowed(target, positions)
 	for _, pos in ipairs(positions) do
 		if target.gameX == pos.x and target.gameY == pos.y then
 			return true
@@ -361,15 +361,15 @@ function Game:isAllowed(source, target, positions)
 end
 
 function Game:canMove(unit, x, y)
-	return self:isAllowed(unit, { gameX = x, gameY = y }, self:allowedMovements(unit))
+	return self:isAllowed({ gameX = x, gameY = y }, self:allowedMovements(unit))
 end
 
 function Game:canHit(unit, target)
-	return self:isAllowed(unit, target, self:allowedHits(unit))
+	return self:isAllowed(target, self:allowedHits(unit))
 end
 
 function Game:canShoot(unit, target)
-	return self:isAllowed(unit, target, self:allowedShots(unit))
+	return self:isAllowed(target, self:allowedShots(unit))
 end
 
 function Game:isInCombat(unit)
@@ -400,7 +400,7 @@ function Game:skipUnitPhase(unit)
 end
 
 function Game:isPendingUnit(unit)
-	if self.turn ~= game.TURN.PLAYER or unit.kind.isEnemy then
+	if self.turn ~= game.TURN.PLAYER or unit.kind.isEnemy or not unit:isAlive() then
 		return false
 	end
 

@@ -16,11 +16,13 @@ end
 function Enemy:takeTurn()
 	for _, unit in ipairs(self.game.enemyUnits) do
 		if unit:isAlive() then
-			local _, playerPath = self:findClosestPlayerUnit(unit)
-
+			local target, playerPath = self:findClosestPlayerUnit(unit)
 			local next = table.remove(playerPath)
+
 			if self.game:isWalkable(next.x, next.y) then
 				unit:move(next.x, next.y)
+			elseif self.game:isAllowed(target, self.game:allowedHits(unit)) then
+				unit:hit(target)
 			end
 		end
 	end

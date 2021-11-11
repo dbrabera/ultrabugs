@@ -33,8 +33,8 @@ function sprite.newSpriteAtlas(path)
 	return self
 end
 
-function SpriteAtlas:draw(id, x, y)
-	love.graphics.setColor(1, 1, 1)
+function SpriteAtlas:draw(id, x, y, alpha)
+	love.graphics.setColor(1, 1, 1, alpha or 1)
 	love.graphics.draw(self.img, self.quads[id], x, y)
 end
 

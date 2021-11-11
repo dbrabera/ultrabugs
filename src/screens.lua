@@ -83,7 +83,7 @@ function GameScreen:draw()
 
 	for i, unit in ipairs(self.game.playerUnits) do
 		local x, y = 4, 16 * (i - 1) + 4 * i
-		self.engine.sprites:draw(unit.kind.spriteID, x, y)
+		self.engine.sprites:draw(unit.kind.spriteID, x, y, unit:isAlive() and 1 or 0.3)
 
 		local color = self.game.selectedUnit == unit and conf.WHITE or conf.GREY
 		util.drawRectangle("line", x, y, 16, 16, color)
