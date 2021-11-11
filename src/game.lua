@@ -19,12 +19,12 @@ local map = {
 	{ 3, 2, 2, 2, 2, 2, 2, 2, 2, 4 },
 }
 
-local TURN = {
+game.TURN = {
 	PLAYER = "player",
 	ENEMY = "enemy",
 }
 
-local PHASE = {
+game.PHASE = {
 	MOVEMENT = "movement",
 	SHOOTING = "shooting",
 	COMBAT = "combat",
@@ -55,14 +55,14 @@ function game.newGame(screenX, screenY)
 	self.cursorGameX = -1
 	self.cursorGameY = -1
 
-	self.turn = TURN.PLAYER
-	self.phase = PHASE.MOVEMENT
+	self.turn = game.TURN.PLAYER
+	self.phase = game.PHASE.MOVEMENT
 
 	return self
 end
 
 function Game:keypressed(key)
-	if self.turn ~= TURN.PLAYER then
+	if self.turn ~= game.TURN.PLAYER then
 		return
 	end
 
@@ -76,16 +76,16 @@ function Game:keypressed(key)
 			return
 		end
 
-		if self.phase == PHASE.MOVEMENT then
-			self.phase = PHASE.SHOOTING
+		if self.phase == game.PHASE.MOVEMENT then
+			self.phase = game.PHASE.SHOOTING
 			self.selectedUnit = self:nextPendingUnit()
-		elseif self.phase == PHASE.SHOOTING then
-			self.phase = PHASE.COMBAT
+		elseif self.phase == game.PHASE.SHOOTING then
+			self.phase = game.PHASE.COMBAT
 			self.selectedUnit = self:nextPendingUnit()
 			if not self.selectedUnit then
 				self:endPlayerTurn()
 			end
-		elseif self.phase == PHASE.COMBAT then
+		elseif self.phase == game.PHASE.COMBAT then
 			self:endPlayerTurn()
 		end
 
@@ -96,15 +96,15 @@ function Game:keypressed(key)
 end
 
 function Game:endPlayerTurn()
-	self.phase = PHASE.MOVEMENT
-	self.turn = TURN.ENEMY
+	self.phase = game.PHASE.MOVEMENT
+	self.turn = game.TURN.ENEMY
 	for _, unit in ipairs(self.playerUnits) do
 		unit:resetTurn()
 	end
 end
 
 function Game:mousepressed(x, y, button)
-	if self.turn ~= TURN.PLAYER then
+	if self.turn ~= game.TURN.PLAYER then
 		return
 	end
 
@@ -130,7 +130,7 @@ function Game:mousepressed(x, y, button)
 		return
 	end
 
-	if self.phase == PHASE.MOVEMENT then
+	if self.phase == game.PHASE.MOVEMENT then
 		if self:canMove(self.selectedUnit, gameX, gameY) then
 			self.selectedUnit:move(gameX, gameY)
 		end
@@ -141,11 +141,11 @@ function Game:mousepressed(x, y, button)
 		return
 	end
 
-	if self.phase == PHASE.SHOOTING then
+	if self.phase == game.PHASE.SHOOTING then
 		if self:canShoot(self.selectedUnit, target) then
 			self.selectedUnit:shoot(target)
 		end
-	elseif self.phase == PHASE.COMBAT then
+	elseif self.phase == game.PHASE.COMBAT then
 		if self:canHit(self.selectedUnit, target) then
 			self.selectedUnit:hit(target)
 		end
@@ -157,7 +157,7 @@ function Game:mousemoved(x, y)
 end
 
 function Game:update(dt)
-	if self.turn ~= TURN.ENEMY then
+	if self.turn ~= game.TURN.ENEMY then
 		return
 	end
 
@@ -166,7 +166,7 @@ function Game:update(dt)
 		unit:resetTurn()
 	end
 
-	self.turn = TURN.PLAYER
+	self.turn = game.TURN.PLAYER
 	self.selectedUnit = self:nextPendingUnit()
 end
 
@@ -193,9 +193,9 @@ function Game:draw(sprites)
 			local x, y = self:screenCoords(pos.x, pos.y)
 
 			local color = conf.LIME
-			if self.phase == PHASE.SHOOTING then
+			if self.phase == game.PHASE.SHOOTING then
 				color = conf.YELLOW
-			elseif self.phase == PHASE.COMBAT then
+			elseif self.phase == game.PHASE.COMBAT then
 				color = conf.RED
 			end
 
@@ -245,19 +245,8 @@ function Game:drawUnit(sprites, unit)
 	end
 end
 
-function Game:drawUnitIndicators(sprites, unit, withHealthBar)
-	local x, y = self:screenCoords(unit.gameX, unit.gameY)
-
-	if withHealthBar then
-		self:drawHealthbar(x + (conf.SPRITE_SIZE / 2), y, unit.health, unit.kind.maxHealth, true)
-	end
-
-	if self:isPendingUnit(unit) then
-		sprites:draw(18, x, y - conf.SPRITE_SIZE - (withHealthBar and 9 or 0))
-	end
-end
-
-function Game:drawHealthbar(x, y, health, maxHealth, centered)
+function game.drawHealthbar(x, y, health, maxHealth, centered, borderColor)
+	borderColor = borderColor or conf.WHITE
 	local w = 4 * maxHealth + 1 - (1 * (maxHealth - 1))
 
 	if centered then
@@ -265,7 +254,7 @@ function Game:drawHealthbar(x, y, health, maxHealth, centered)
 	end
 
 	util.drawRectangle("fill", x, y - 8, 4 * health, 5, conf.BLACK)
-	util.drawRectangle("line", x, y - 8, w, 5, conf.WHITE)
+	util.drawRectangle("line", x, y - 8, w, 5, borderColor)
 
 	for i = 1, health do
 		local xi, yi = x + 3 * (i - 1) + 1, y - 7
@@ -274,12 +263,24 @@ function Game:drawHealthbar(x, y, health, maxHealth, centered)
 	end
 end
 
+function Game:drawUnitIndicators(sprites, unit, withHealthBar)
+	local x, y = self:screenCoords(unit.gameX, unit.gameY)
+
+	if withHealthBar then
+		game.drawHealthbar(x + (conf.SPRITE_SIZE / 2), y, unit.health, unit.kind.maxHealth, true)
+	end
+
+	if self:isPendingUnit(unit) then
+		sprites:draw(18, x, y - conf.SPRITE_SIZE - (withHealthBar and 9 or 0))
+	end
+end
+
 function Game:allowedActions(unit)
-	if self.phase == PHASE.MOVEMENT then
+	if self.phase == game.PHASE.MOVEMENT then
 		return self:allowedMovements(unit)
-	elseif self.phase == PHASE.COMBAT then
+	elseif self.phase == game.PHASE.COMBAT then
 		return self:allowedHits(unit)
-	elseif self.phase == PHASE.SHOOTING then
+	elseif self.phase == game.PHASE.SHOOTING then
 		return self:allowedShots(unit)
 	end
 end
@@ -389,27 +390,27 @@ function Game:isWalkable(gameX, gameY)
 end
 
 function Game:skipUnitPhase(unit)
-	if self.phase == PHASE.MOVEMENT then
+	if self.phase == game.PHASE.MOVEMENT then
 		unit.hasMoved = true
-	elseif self.phase == PHASE.SHOOTING then
+	elseif self.phase == game.PHASE.SHOOTING then
 		unit.hasShot = true
-	elseif self.phase == PHASE.COMBAT then
+	elseif self.phase == game.PHASE.COMBAT then
 		unit.hasHit = true
 	end
 end
 
 function Game:isPendingUnit(unit)
-	if self.turn ~= TURN.PLAYER or unit.kind.isEnemy then
+	if self.turn ~= game.TURN.PLAYER or unit.kind.isEnemy then
 		return false
 	end
 
 	local isInCombat = self:isInCombat(unit)
 
-	if self.phase == PHASE.MOVEMENT then
+	if self.phase == game.PHASE.MOVEMENT then
 		return not unit.hasMoved
-	elseif self.phase == PHASE.SHOOTING then
+	elseif self.phase == game.PHASE.SHOOTING then
 		return not unit.hasShot and not isInCombat
-	elseif self.phase == PHASE.COMBAT then
+	elseif self.phase == game.PHASE.COMBAT then
 		return not unit.hasHit and isInCombat
 	end
 end

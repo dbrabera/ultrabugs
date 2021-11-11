@@ -108,7 +108,8 @@ function util.findPath(src, dst, isWalkable)
 	return path
 end
 
-function util.drawText(text, color, x, y)
+function util.drawText(text, font, color, x, y)
+	love.graphics.setFont(font)
 	love.graphics.setColor(color[1] / 255, color[2] / 255, color[3] / 255)
 	love.graphics.print(text, x, y)
 end

@@ -14,3 +14,7 @@ To run the game do:
 ```sh
 $ make run
 ```
+
+## Attribution
+
+- Font [Gravity](https://jotson.itch.io/gravity-pixel-font) by [John Watson](https://itch.io/profile/jotson)
