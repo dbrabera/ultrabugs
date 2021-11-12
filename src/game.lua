@@ -331,20 +331,18 @@ function Game:allowedShots(unit)
 
 	local res = {}
 
-	for _, pos in ipairs({
-		{ -2, 0 },
-		{ 0, -2 },
-		{ 0, 2 },
-		{ 2, 0 },
-		{ -3, 0 },
-		{ 0, -3 },
-		{ 0, 3 },
-		{ 3, 0 },
+	for _, delta in ipairs({
+		{ unit.kind.shotRange, 0 },
+		{ -unit.kind.shotRange, 0 },
+		{ 0, unit.kind.shotRange },
+		{ 0, -unit.kind.shotRange },
 	}) do
-		local x, y = unit.gameX + pos[1], unit.gameY + pos[2]
+		local x, y = unit.gameX + delta[1], unit.gameY + delta[2]
 
-		if self:isWalkable(x, y) or self:getUnitAt(x, y) then
-			table.insert(res, { x = x, y = y })
+		for _, pos in ipairs(util.los({ x = unit.gameX, y = unit.gameY }, { x = x, y = y }, function(p)
+			return not self:isInbounds(p.x, p.y) or tiles.KIND[map[p.x + 1][p.y + 1]].solid
+		end)) do
+			table.insert(res, pos)
 		end
 	end
 

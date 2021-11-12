@@ -108,6 +108,35 @@ function util.findPath(src, dst, isWalkable)
 	return path
 end
 
+-- Returns the straight Line of Sight between the source and the destination.
+function util.los(src, dst, isSolid)
+	if src.x ~= dst.x and src.y ~= dst.y then
+		return {}
+	end
+
+	local dx, dy = util.sign(dst.x - src.x), util.sign(dst.y - src.y)
+	local curr, res = src, {}
+
+	while curr.x ~= dst.x or curr.y ~= dst.y do
+		local next = { x = curr.x + dx, y = curr.y + dy }
+		if isSolid(next) then
+			return res
+		end
+
+		curr = next
+		table.insert(res, curr)
+	end
+	return res
+end
+
+-- Sign returns a +/- 1 depending on the sign of n. If n is zero it returns zero.
+function util.sign(n)
+	if n == 0 then
+		return 0
+	end
+	return n > 0 and 1 or -1
+end
+
 function util.drawText(text, font, color, x, y)
 	love.graphics.setFont(font)
 	love.graphics.setColor(color[1] / 255, color[2] / 255, color[3] / 255)

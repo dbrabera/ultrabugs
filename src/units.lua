@@ -1,20 +1,21 @@
 local unit = {}
 
-local function defkind(spriteID, name, maxHealth, combatDamage, rangedDamage, isEnemy)
+local function defkind(spriteID, name, maxHealth, combatDamage, shotDamage, shotRange, isEnemy)
 	return {
 		spriteID = spriteID,
 		name = name,
 		maxHealth = maxHealth,
 		combatDamage = combatDamage,
-		rangedDamage = rangedDamage,
+		shotDamage = shotDamage,
+		shotRange = shotRange,
 		isEnemy = isEnemy,
 	}
 end
 
 unit.KIND = {
-	defkind(9, "Marine", 2, 1, 2, false),
-	defkind(10, "Marine captain", 2, 2, 2, false),
-	defkind(11, "Marine", 2, 1, 1, false),
+	defkind(9, "Marine", 2, 1, 2, 2, false),
+	defkind(10, "Marine captain", 2, 2, 2, 2, false),
+	defkind(11, "Marine", 2, 1, 1, 4, false),
 	-- Enemy names are inspired on the https://en.wikipedia.org/wiki/Arachnid class
 	defkind(25, "Opilion", 1, 1, 0, true),
 }
@@ -58,7 +59,7 @@ end
 
 function Unit:shoot(target)
 	print(self.kind.name .. " shoots at " .. target.kind.name)
-	target:takeDamage(self.kind.rangedDamage)
+	target:takeDamage(self.kind.shotDamage)
 	self.hasShot = true
 end
 
