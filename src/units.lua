@@ -14,9 +14,9 @@ local function defkind(spriteID, name, maxHealth, combatDamage, shotDamage, minS
 end
 
 unit.KIND = {
-	defkind(11, "Marine", 2, 1, 2, 1, 2, false),
-	defkind(10, "Marine captain", 3, 2, 2, 1, 2, false),
-	defkind(9, "Marine sniper", 2, 1, 1, 2, 4, false),
+	defkind(35, "Marine", 2, 1, 2, 1, 2, false),
+	defkind(34, "Marine captain", 3, 2, 2, 1, 2, false),
+	defkind(33, "Marine sniper", 2, 1, 1, 2, 4, false),
 	-- Enemy names are inspired on the https://en.wikipedia.org/wiki/Arachnid class
 	defkind(25, "Opilion", 1, 1, 0, 0, 0, true),
 }

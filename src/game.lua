@@ -1,23 +1,11 @@
 local conf = require("conf")
 local enemy = require("enemy")
+local levels = require("levels")
 local tiles = require("tiles")
 local units = require("units")
 local util = require("util")
 
 local game = {}
-
-local map = {
-	{ 3, 2, 2, 2, 2, 2, 2, 2, 2, 4 },
-	{ 3, 1, 1, 1, 1, 1, 1, 1, 1, 4 },
-	{ 3, 1, 1, 1, 1, 1, 1, 1, 1, 4 },
-	{ 3, 1, 1, 1, 1, 1, 1, 1, 1, 4 },
-	{ 3, 1, 1, 1, 1, 1, 1, 1, 1, 4 },
-	{ 3, 1, 1, 1, 2, 2, 2, 1, 1, 4 },
-	{ 3, 1, 1, 1, 1, 1, 1, 1, 1, 4 },
-	{ 3, 1, 1, 1, 1, 1, 1, 1, 1, 4 },
-	{ 3, 1, 1, 1, 1, 1, 1, 1, 1, 4 },
-	{ 3, 2, 2, 2, 2, 2, 2, 2, 2, 4 },
-}
 
 game.TURN = {
 	PLAYER = "player",
@@ -32,24 +20,28 @@ game.PHASE = {
 
 local Game = {}
 
-function game.newGame(screenX, screenY)
+function game.newGame(lvl, screenX, screenY, playerUnits)
 	local self = {}
 	setmetatable(self, { __index = Game })
+
+	if not playerUnits then
+		playerUnits = {
+			units.newUnit(units.KIND[2], 2, 1),
+			units.newUnit(units.KIND[1], 1, 1),
+			units.newUnit(units.KIND[3], 3, 1),
+		}
+	else
+		for _, unit in ipairs(playerUnits) do
+			unit.resetTurn()
+		end
+	end
 
 	self.screenX = screenX
 	self.screenY = screenY
 
 	self.enemy = enemy.newEnemy(self)
 
-	self.playerUnits = {
-		units.newUnit(units.KIND[1], 2, 2),
-		units.newUnit(units.KIND[2], 4, 2),
-		units.newUnit(units.KIND[3], 6, 3),
-	}
-	self.enemyUnits = {
-		units.newUnit(units.KIND[4], 2, 4),
-		units.newUnit(units.KIND[4], 7, 7),
-	}
+	self.map, self.playerUnits, self.enemyUnits = levels.build(lvl, playerUnits)
 	self.selectedUnit = self.playerUnits[1]
 
 	self.cursorGameX = -1
@@ -173,7 +165,7 @@ end
 function Game:draw(sprites)
 	for i = 0, conf.GRID_SIZE - 1 do
 		for j = 0, conf.GRID_SIZE - 1 do
-			local t = tiles.KIND[map[j + 1][i + 1]]
+			local t = tiles.KIND[self.map[j + 1][i + 1]]
 			sprites:draw(t.spriteID, self.screenX + i * conf.SPRITE_SIZE, self.screenY + j * conf.SPRITE_SIZE)
 		end
 	end
@@ -339,7 +331,7 @@ function Game:allowedShots(unit)
 		local x, y = unit.gameX + delta[1], unit.gameY + delta[2]
 
 		for _, pos in ipairs(util.los({ x = unit.gameX, y = unit.gameY }, { x = x, y = y }, function(p)
-			return not self:isInbounds(p.x, p.y) or tiles.KIND[map[p.y + 1][p.x + 1]].solid
+			return not self:isInbounds(p.x, p.y) or tiles.KIND[self.map[p.y + 1][p.x + 1]].solid
 		end)) do
 			if
 				math.abs(pos.x - unit.gameX) >= unit.kind.minShotRange
@@ -388,7 +380,7 @@ function Game:isWalkable(gameX, gameY)
 	if self:getUnitAt(gameX, gameY) then
 		return false
 	end
-	return self:isInbounds(gameX, gameY) and tiles.KIND[map[gameY + 1][gameX + 1]].walkable
+	return self:isInbounds(gameX, gameY) and tiles.KIND[self.map[gameY + 1][gameX + 1]].walkable
 end
 
 function Game:skipUnitPhase(unit)

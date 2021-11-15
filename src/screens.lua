@@ -1,6 +1,7 @@
 local conf = require("conf")
 local game = require("game")
 local util = require("util")
+local levels = require("levels")
 
 local screens = {}
 
@@ -32,7 +33,8 @@ function screens.newGameScreen(engine)
 	setmetatable(self, { __index = GameScreen })
 
 	self.engine = engine
-	self.game = game.newGame(80, 10)
+	self.lvl = 1
+	self.game = game.newGame(self.lvl, 80, 10)
 
 	return self
 end
@@ -52,8 +54,15 @@ end
 function GameScreen:update(dt)
 	self.game:update(dt)
 
-	if self.game:isGameOver() or self.game:isVictory() then
+	if self.game:isGameOver() then
 		self.engine:pop()
+	elseif self.game:isVictory() then
+		if self.lvl == levels.MAX_LEVEL then
+			self.engine:pop()
+		else
+			self.lvl = self.lvl + 1
+			self.game = game.newGame(self.lvl, 80, 10, self.game.playerUnits)
+		end
 	end
 end
 
