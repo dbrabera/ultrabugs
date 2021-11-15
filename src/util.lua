@@ -117,7 +117,7 @@ function util.los(src, dst, isSolid)
 	local dx, dy = util.sign(dst.x - src.x), util.sign(dst.y - src.y)
 	local curr, res = src, {}
 
-	while curr.x ~= dst.x or curr.y ~= dst.y do
+	while not (curr.x == dst.x and curr.y == dst.y) do
 		local next = { x = curr.x + dx, y = curr.y + dy }
 		if isSolid(next) then
 			return res

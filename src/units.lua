@@ -1,23 +1,24 @@
 local unit = {}
 
-local function defkind(spriteID, name, maxHealth, combatDamage, shotDamage, shotRange, isEnemy)
+local function defkind(spriteID, name, maxHealth, combatDamage, shotDamage, minShotRange, maxShotRange, isEnemy)
 	return {
 		spriteID = spriteID,
 		name = name,
 		maxHealth = maxHealth,
 		combatDamage = combatDamage,
 		shotDamage = shotDamage,
-		shotRange = shotRange,
+		minShotRange = minShotRange,
+		maxShotRange = maxShotRange,
 		isEnemy = isEnemy,
 	}
 end
 
 unit.KIND = {
-	defkind(9, "Marine", 2, 1, 2, 2, false),
-	defkind(10, "Marine captain", 2, 2, 2, 2, false),
-	defkind(11, "Marine", 2, 1, 1, 4, false),
+	defkind(11, "Marine", 2, 1, 2, 1, 2, false),
+	defkind(10, "Marine captain", 3, 2, 2, 1, 2, false),
+	defkind(9, "Marine sniper", 2, 1, 1, 2, 4, false),
 	-- Enemy names are inspired on the https://en.wikipedia.org/wiki/Arachnid class
-	defkind(25, "Opilion", 1, 1, 0, true),
+	defkind(25, "Opilion", 1, 1, 0, 0, 0, true),
 }
 
 local Unit = {}

@@ -330,19 +330,23 @@ function Game:allowedShots(unit)
 	end
 
 	local res = {}
-
 	for _, delta in ipairs({
-		{ unit.kind.shotRange, 0 },
-		{ -unit.kind.shotRange, 0 },
-		{ 0, unit.kind.shotRange },
-		{ 0, -unit.kind.shotRange },
+		{ unit.kind.maxShotRange, 0 },
+		{ -unit.kind.maxShotRange, 0 },
+		{ 0, unit.kind.maxShotRange },
+		{ 0, -unit.kind.maxShotRange },
 	}) do
 		local x, y = unit.gameX + delta[1], unit.gameY + delta[2]
 
 		for _, pos in ipairs(util.los({ x = unit.gameX, y = unit.gameY }, { x = x, y = y }, function(p)
-			return not self:isInbounds(p.x, p.y) or tiles.KIND[map[p.x + 1][p.y + 1]].solid
+			return not self:isInbounds(p.x, p.y) or tiles.KIND[map[p.y + 1][p.x + 1]].solid
 		end)) do
-			table.insert(res, pos)
+			if
+				math.abs(pos.x - unit.gameX) >= unit.kind.minShotRange
+				or math.abs(pos.y - unit.gameY) >= unit.kind.minShotRange
+			then
+				table.insert(res, pos)
+			end
 		end
 	end
 
