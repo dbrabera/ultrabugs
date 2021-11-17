@@ -66,28 +66,30 @@ function GameScreen:update(dt)
 	end
 end
 
-local function phaseColor(phase)
-	if phase == game.PHASE.MOVEMENT then
-		return conf.LIME
-	elseif phase == game.PHASE.SHOOTING then
-		return conf.YELLOW
-	elseif phase == game.PHASE.COMBAT then
-		return conf.RED
+local ICONS = {
+	MOVE = { 45, 53, 61 },
+	SHOOT = { 46, 54, 62 },
+	FIGHT = { 47, 55, 63 },
+}
+
+local function icon(action, selectedAction, disabled)
+	local idx = 3
+	if disabled then
+		idx = 1
+	elseif action == selectedAction then
+		idx = 2
+	end
+
+	if action == game.ACTION.MOVE then
+		return ICONS.MOVE[idx]
+	elseif action == game.ACTION.SHOOT then
+		return ICONS.SHOOT[idx]
+	elseif action == game.ACTION.FIGHT then
+		return ICONS.FIGHT[idx]
 	end
 end
 
 function GameScreen:draw()
-	if self.game.phase == game.PHASE.MOVEMENT then
-		util.drawText("MOVEMENT", self.engine.regular, conf.WHITE, 255, 8)
-	elseif self.game.phase == game.PHASE.SHOOTING then
-		util.drawText("SHOOTING", self.engine.regular, conf.WHITE, 255, 8)
-	elseif self.game.phase == game.PHASE.COMBAT then
-		util.drawText("COMBAT", self.engine.regular, conf.WHITE, 260, 8)
-	end
-
-	util.drawText("PHASE", self.engine.regular, conf.WHITE, 264, 16)
-	util.drawRectangle("line", 250, 4, 52, 21, phaseColor(self.game.phase))
-
 	local hoveredUnit = self.game:getUnitAt(self.game.cursorGameX, self.game.cursorGameY)
 
 	for i, unit in ipairs(self.game.playerUnits) do
@@ -101,7 +103,7 @@ function GameScreen:draw()
 	end
 
 	if hoveredUnit and hoveredUnit.kind.isEnemy then
-		local x, y = 4, 150
+		local x, y = 250, 150
 
 		self.engine.sprites:draw(hoveredUnit.kind.spriteID, x, y)
 		util.drawRectangle("line", x, y, 16, 16, conf.GREY)
@@ -110,6 +112,19 @@ function GameScreen:draw()
 	end
 
 	self.game:draw(self.engine.sprites)
+
+	if self.game.selectedUnit then
+		local unit = self.game.selectedUnit
+
+		self.engine.sprites:draw(unit.kind.spriteID, 4, 130)
+		util.drawRectangle("line", 4, 130, 16, 16, conf.WHITE)
+		game.drawHealthbar(4 + 18, 130 + 8, unit.health, unit.kind.maxHealth, false, conf.WHITE)
+		util.drawText(unit.kind.name, self.engine.regular, conf.WHITE, 4 + 18, 130 + 8)
+
+		self.engine.sprites:draw(icon(game.ACTION.MOVE, self.game.action, unit.hasMoved), 4, 150)
+		self.engine.sprites:draw(icon(game.ACTION.SHOOT, self.game.action, unit.hasShot), 20, 150)
+		self.engine.sprites:draw(icon(game.ACTION.FIGHT, self.game.action, unit.hasHit), 36, 150)
+	end
 end
 
 return screens

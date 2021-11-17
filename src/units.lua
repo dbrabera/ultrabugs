@@ -14,11 +14,11 @@ local function defkind(spriteID, name, maxHealth, combatDamage, shotDamage, minS
 end
 
 unit.KIND = {
-	defkind(35, "Marine", 2, 1, 2, 1, 2, false),
-	defkind(34, "Marine captain", 3, 2, 2, 1, 2, false),
-	defkind(33, "Marine sniper", 2, 1, 1, 2, 4, false),
+	defkind(35, "Trooper", 2, 1, 2, 1, 2, false),
+	defkind(34, "Captain", 3, 2, 2, 1, 2, false),
+	defkind(33, "Sniper", 2, 1, 1, 2, 4, false),
 	-- Enemy names are inspired on the https://en.wikipedia.org/wiki/Arachnid class
-	defkind(25, "Opilion", 1, 1, 0, 0, 0, true),
+	defkind(25, "Opilion", 3, 1, 0, 0, 0, true),
 }
 
 local Unit = {}
@@ -50,22 +50,24 @@ function Unit:move(gameX, gameY)
 	self.gameX = gameX
 	self.gameY = gameY
 	self.hasMoved = true
+	self.hasShot = true
 end
 
 function Unit:hit(target)
-	print(self.kind.name .. " hits " .. target.kind.name)
 	target:takeDamage(self.kind.combatDamage)
+	self.hasShot = true
+	self.hasMoved = true
 	self.hasHit = true
 end
 
 function Unit:shoot(target)
-	print(self.kind.name .. " shoots at " .. target.kind.name)
 	target:takeDamage(self.kind.shotDamage)
 	self.hasShot = true
+	self.hasMoved = true
+	self.hasHit = true
 end
 
 function Unit:takeDamage(damage)
-	print(self.kind.name .. " takes " .. damage .. " damage")
 	if self.health <= damage then
 		self.health = 0
 	else

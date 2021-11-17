@@ -12,10 +12,10 @@ game.TURN = {
 	ENEMY = "enemy",
 }
 
-game.PHASE = {
-	MOVEMENT = "movement",
-	SHOOTING = "shooting",
-	COMBAT = "combat",
+game.ACTION = {
+	MOVE = "move",
+	SHOOT = "shoot",
+	FIGHT = "fight",
 }
 
 local Game = {}
@@ -32,7 +32,7 @@ function game.newGame(lvl, screenX, screenY, playerUnits)
 		}
 	else
 		for _, unit in ipairs(playerUnits) do
-			unit.resetTurn()
+			unit:resetTurn()
 		end
 	end
 
@@ -48,7 +48,7 @@ function game.newGame(lvl, screenX, screenY, playerUnits)
 	self.cursorGameY = -1
 
 	self.turn = game.TURN.PLAYER
-	self.phase = game.PHASE.MOVEMENT
+	self.action = game.ACTION.MOVE
 
 	return self
 end
@@ -59,36 +59,26 @@ function Game:keypressed(key)
 	end
 
 	if key == "space" then
+		self:endPlayerTurn()
+	elseif key == "1" then
 		if self.selectedUnit then
-			self:skipUnitPhase(self.selectedUnit)
+			self.action = game.ACTION.MOVE
 		end
-
-		self.selectedUnit = self:nextPendingUnit()
+	elseif key == "2" then
 		if self.selectedUnit then
-			return
+			self.action = game.ACTION.SHOOT
 		end
-
-		if self.phase == game.PHASE.MOVEMENT then
-			self.phase = game.PHASE.SHOOTING
-			self.selectedUnit = self:nextPendingUnit()
-		elseif self.phase == game.PHASE.SHOOTING then
-			self.phase = game.PHASE.COMBAT
-			self.selectedUnit = self:nextPendingUnit()
-			if not self.selectedUnit then
-				self:endPlayerTurn()
-			end
-		elseif self.phase == game.PHASE.COMBAT then
-			self:endPlayerTurn()
+	elseif key == "3" then
+		if self.selectedUnit then
+			self.action = game.ACTION.FIGHT
 		end
-
-		return
 	elseif key == "escape" then
 		self.selectedUnit = nil
 	end
 end
 
 function Game:endPlayerTurn()
-	self.phase = game.PHASE.MOVEMENT
+	self.action = game.ACTION.MOVE
 	self.turn = game.TURN.ENEMY
 	for _, unit in ipairs(self.playerUnits) do
 		unit:resetTurn()
@@ -115,6 +105,7 @@ function Game:mousepressed(x, y, button)
 
 	if target and not target.kind.isEnemy then
 		self.selectedUnit = target
+		self.action = game.ACTION.MOVE
 		return
 	end
 
@@ -122,7 +113,7 @@ function Game:mousepressed(x, y, button)
 		return
 	end
 
-	if self.phase == game.PHASE.MOVEMENT then
+	if self.action == game.ACTION.MOVE then
 		if self:canMove(self.selectedUnit, gameX, gameY) then
 			self.selectedUnit:move(gameX, gameY)
 		end
@@ -133,11 +124,11 @@ function Game:mousepressed(x, y, button)
 		return
 	end
 
-	if self.phase == game.PHASE.SHOOTING then
+	if self.action == game.ACTION.SHOOT then
 		if self:canShoot(self.selectedUnit, target) then
 			self.selectedUnit:shoot(target)
 		end
-	elseif self.phase == game.PHASE.COMBAT then
+	elseif self.action == game.ACTION.FIGHT then
 		if self:canHit(self.selectedUnit, target) then
 			self.selectedUnit:hit(target)
 		end
@@ -159,7 +150,6 @@ function Game:update(dt)
 	end
 
 	self.turn = game.TURN.PLAYER
-	self.selectedUnit = self:nextPendingUnit()
 end
 
 function Game:draw(sprites)
@@ -185,9 +175,9 @@ function Game:draw(sprites)
 			local x, y = self:screenCoords(pos.x, pos.y)
 
 			local color = conf.LIME
-			if self.phase == game.PHASE.SHOOTING then
+			if self.action == game.ACTION.SHOOT then
 				color = conf.YELLOW
-			elseif self.phase == game.PHASE.COMBAT then
+			elseif self.action == game.ACTION.FIGHT then
 				color = conf.RED
 			end
 
@@ -268,11 +258,11 @@ function Game:drawUnitIndicators(sprites, unit, withHealthBar)
 end
 
 function Game:allowedActions(unit)
-	if self.phase == game.PHASE.MOVEMENT then
+	if self.action == game.ACTION.MOVE then
 		return self:allowedMovements(unit)
-	elseif self.phase == game.PHASE.COMBAT then
+	elseif self.action == game.ACTION.FIGHT then
 		return self:allowedHits(unit)
-	elseif self.phase == game.PHASE.SHOOTING then
+	elseif self.action == game.ACTION.SHOOT then
 		return self:allowedShots(unit)
 	end
 end
@@ -383,30 +373,11 @@ function Game:isWalkable(gameX, gameY)
 	return self:isInbounds(gameX, gameY) and tiles.KIND[self.map[gameY + 1][gameX + 1]].walkable
 end
 
-function Game:skipUnitPhase(unit)
-	if self.phase == game.PHASE.MOVEMENT then
-		unit.hasMoved = true
-	elseif self.phase == game.PHASE.SHOOTING then
-		unit.hasShot = true
-	elseif self.phase == game.PHASE.COMBAT then
-		unit.hasHit = true
-	end
-end
-
 function Game:isPendingUnit(unit)
 	if self.turn ~= game.TURN.PLAYER or unit.kind.isEnemy or not unit:isAlive() then
 		return false
 	end
-
-	local isInCombat = self:isInCombat(unit)
-
-	if self.phase == game.PHASE.MOVEMENT then
-		return not unit.hasMoved
-	elseif self.phase == game.PHASE.SHOOTING then
-		return not unit.hasShot and not isInCombat
-	elseif self.phase == game.PHASE.COMBAT then
-		return not unit.hasHit and isInCombat
-	end
+	return not unit.hasMoved
 end
 
 function Game:getUnitAt(gameX, gameY)
@@ -434,15 +405,6 @@ function Game:gameCoords(screenX, screenY)
 	local gameX = math.floor((screenX - self.screenX) / conf.SPRITE_SIZE)
 	local gameY = math.floor((screenY - self.screenY) / conf.SPRITE_SIZE)
 	return gameX, gameY
-end
-
-function Game:nextPendingUnit()
-	for _, unit in ipairs(self.playerUnits) do
-		if self:isPendingUnit(unit) then
-			return unit
-		end
-	end
-	return nil
 end
 
 function Game:isVictory()
