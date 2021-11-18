@@ -19,6 +19,7 @@ unit.KIND = {
 	defkind(33, "Sniper", 2, 1, 1, 2, 4, false),
 	-- Enemy names are inspired on the https://en.wikipedia.org/wiki/Arachnid class
 	defkind(25, "Opilion", 3, 1, 0, 0, 0, true),
+	defkind(26, "Trombid", 2, 2, 1, 1, 3, true),
 }
 
 local Unit = {}
@@ -75,8 +76,32 @@ function Unit:takeDamage(damage)
 	end
 end
 
+function Unit:isAdversary(other)
+	if not other then
+		return false
+	end
+	return self.kind.isEnemy ~= other.kind.isEnemy
+end
+
+function Unit:isInShotRange(x, y)
+	-- check whether is in the same axis as shooting can only be done in 4 directions
+	if self.gameX ~= x and self.gameY ~= y then
+		return false
+	end
+
+	if math.abs(x - self.gameX) < self.kind.minShotRange and math.abs(y - self.gameY) < self.kind.minShotRange then
+		return false
+	end
+
+	return math.abs(x - self.gameX) <= self.kind.maxShotRange and math.abs(y - self.gameY) <= self.kind.maxShotRange
+end
+
 function Unit:isAlive()
 	return self.health > 0
+end
+
+function Unit:hasRangedAttack()
+	return self.kind.maxShotRange >= 2
 end
 
 return unit

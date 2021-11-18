@@ -16,27 +16,43 @@ end
 function Enemy:takeTurn()
 	for _, unit in ipairs(self.game.enemyUnits) do
 		if unit:isAlive() then
-			local target, playerPath = self:findClosestPlayerUnit(unit)
-			local next = table.remove(playerPath)
-
-			if self.game:isWalkable(next.x, next.y) then
-				unit:move(next.x, next.y)
-			elseif self.game:isAllowed(target, self.game:allowedHits(unit)) then
-				unit:hit(target)
-			end
+			self:useUnit(unit)
 		end
 	end
 end
 
+function Enemy:useUnit(unit)
+	local target, playerPath = self:findClosestPlayerUnit(unit)
+	local next = table.remove(playerPath)
+
+	if self.game:isAllowed(target, self.game:allowedShots(unit)) then
+		unit:shoot(target)
+		return
+	end
+
+	if self.game:isWalkable(next.x, next.y) then
+		unit:move(next.x, next.y)
+	end
+
+	if self.game:isAllowed(target, self.game:allowedHits(unit)) then
+		unit:hit(target)
+	end
+end
+
+--- Returns the closest player unit. If two player units are at the same distance it returns the one
+-- with less health.
 function Enemy:findClosestPlayerUnit(unit)
 	local minPath = nil
 	local closestUnit = nil
 
 	for _, playerUnit in ipairs(self.game.playerUnits) do
-		local path = self:findPath(unit, playerUnit)
-		if path and (not minPath or #path < #minPath) then
-			minPath = path
-			closestUnit = playerUnit
+		if playerUnit:isAlive() then
+			local path = self:findPath(unit, playerUnit)
+
+			if path and (not minPath or #path < #minPath or playerUnit.health < closestUnit.health) then
+				minPath = path
+				closestUnit = playerUnit
+			end
 		end
 	end
 

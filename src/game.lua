@@ -79,6 +79,7 @@ end
 
 function Game:endPlayerTurn()
 	self.action = game.ACTION.MOVE
+	self.selectedUnit = nil
 	self.turn = game.TURN.ENEMY
 	for _, unit in ipairs(self.playerUnits) do
 		unit:resetTurn()
@@ -321,12 +322,19 @@ function Game:allowedShots(unit)
 		local x, y = unit.gameX + delta[1], unit.gameY + delta[2]
 
 		for _, pos in ipairs(util.los({ x = unit.gameX, y = unit.gameY }, { x = x, y = y }, function(p)
-			return not self:isInbounds(p.x, p.y) or tiles.KIND[self.map[p.y + 1][p.x + 1]].solid
+			return self:isSolid(p.x, p.y)
 		end)) do
-			if
-				math.abs(pos.x - unit.gameX) >= unit.kind.minShotRange
-				or math.abs(pos.y - unit.gameY) >= unit.kind.minShotRange
-			then
+			local target = self:getUnitAt(pos.x, pos.y)
+
+			if target and target ~= unit then
+				if unit:isInShotRange(pos.x, pos.y) and unit:isAdversary(target) then
+					table.insert(res, pos)
+				end
+				-- blocks the rest of the line
+				break
+			end
+
+			if unit:isInShotRange(pos.x, pos.y) then
 				table.insert(res, pos)
 			end
 		end
@@ -366,11 +374,16 @@ function Game:isInCombat(unit)
 	return false
 end
 
-function Game:isWalkable(gameX, gameY)
-	if self:getUnitAt(gameX, gameY) then
+function Game:isWalkable(x, y)
+	if self:getUnitAt(x, y) then
 		return false
 	end
-	return self:isInbounds(gameX, gameY) and tiles.KIND[self.map[gameY + 1][gameX + 1]].walkable
+	return self:isInbounds(x, y) and tiles.KIND[self.map[y + 1][x + 1]].walkable
+end
+
+--- Checks whether a tile is solid and blocks the line of sight.
+function Game:isSolid(x, y)
+	return not self:isInbounds(x, y) or tiles.KIND[self.map[y + 1][x + 1]].solid
 end
 
 function Game:isPendingUnit(unit)
