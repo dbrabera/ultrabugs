@@ -276,7 +276,7 @@ function Game:allowedMovements(unit)
 	local res = {}
 
 	for _, pos in ipairs(util.neighbors({ x = unit.gameX, y = unit.gameY })) do
-		if self:isWalkable(pos.x, pos.y) then
+		if self:isWalkable(pos.x, pos.y) and self:isEmpty(pos.x, pos.y) then
 			table.insert(res, pos)
 		end
 	end
@@ -375,10 +375,11 @@ function Game:isInCombat(unit)
 end
 
 function Game:isWalkable(x, y)
-	if self:getUnitAt(x, y) then
-		return false
-	end
 	return self:isInbounds(x, y) and tiles.KIND[self.map[y + 1][x + 1]].walkable
+end
+
+function Game:isEmpty(x, y)
+	return not self:getUnitAt(x, y)
 end
 
 --- Checks whether a tile is solid and blocks the line of sight.

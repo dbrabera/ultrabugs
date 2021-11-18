@@ -103,6 +103,10 @@ function util.findPath(src, dst, isWalkable)
 		local id = curr.x .. "|" .. curr.y
 		table.insert(path, curr)
 		curr = cameFrom[id]
+		if not curr then
+			-- no path found
+			return nil
+		end
 	end
 
 	return path

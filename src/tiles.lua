@@ -27,6 +27,12 @@ tiles.KIND = {
 	defkind("door up", 58, false, true),
 	defkind("wall", 59, false, true),
 	defkind("block", 42, false, true),
+	defkind("pool", 6, false, false),
+	defkind("pool", 7, false, false),
+	defkind("pool", 8, false, false),
+	defkind("pool", 14, false, false),
+	defkind("pool", 15, false, false),
+	defkind("pool", 16, false, false),
 }
 
 return tiles

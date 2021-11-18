@@ -20,6 +20,9 @@ unit.KIND = {
 	-- Enemy names are inspired on the https://en.wikipedia.org/wiki/Arachnid class
 	defkind(25, "Opilion", 3, 1, 0, 0, 0, true),
 	defkind(26, "Trombid", 2, 2, 1, 1, 3, true),
+	defkind(27, "Xiphora", 1, 1, 1, 2, 4, true),
+	defkind(28, "Teramon", 4, 2, 0, 0, 0, true),
+	defkind(29, "Queen", 4, 2, 1, 1, 2, true),
 }
 
 local Unit = {}

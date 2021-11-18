@@ -23,6 +23,10 @@ end
 
 function Enemy:useUnit(unit)
 	local target, playerPath = self:findClosestPlayerUnit(unit)
+	if not playerPath then
+		return
+	end
+
 	local next = table.remove(playerPath)
 
 	if self.game:isAllowed(target, self.game:allowedShots(unit)) then
@@ -30,7 +34,7 @@ function Enemy:useUnit(unit)
 		return
 	end
 
-	if self.game:isWalkable(next.x, next.y) then
+	if self.game:isWalkable(next.x, next.y) and self.game:isEmpty(next.x, next.y) then
 		unit:move(next.x, next.y)
 	end
 
