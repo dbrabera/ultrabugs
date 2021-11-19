@@ -49,6 +49,7 @@ function game.newGame(lvl, screenX, screenY, playerUnits)
 
 	self.turn = game.TURN.PLAYER
 	self.action = game.ACTION.MOVE
+	self.turnCount = 0
 
 	return self
 end
@@ -84,6 +85,7 @@ function Game:endPlayerTurn()
 	for _, unit in ipairs(self.playerUnits) do
 		unit:resetTurn()
 	end
+	self.turnCount = self.turnCount + 1
 end
 
 function Game:mousepressed(x, y, button)
@@ -437,6 +439,21 @@ function Game:isGameOver()
 		end
 	end
 	return true
+end
+
+function Game:stats()
+	local killCount = 0
+
+	for _, unit in ipairs(self.enemyUnits) do
+		if not unit:isAlive() then
+			killCount = killCount + 1
+		end
+	end
+
+	return {
+		turnCount = self.turnCount,
+		killCount = killCount,
+	}
 end
 
 return game

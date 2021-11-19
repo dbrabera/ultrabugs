@@ -26,6 +26,42 @@ function MainScreen:draw()
 	util.drawText("Press space to start", self.engine.bold, conf.WHITE, 90, 100)
 end
 
+local GameOverScreen = {}
+
+function screens.newGameOverScreen(engine, level, turnCount, killCount)
+	local self = {}
+	setmetatable(self, { __index = GameOverScreen })
+
+	self.engine = engine
+	self.level = level
+	self.turnCount = turnCount
+	self.killCount = killCount
+
+	return self
+end
+
+function GameOverScreen:keypressed(key)
+	if key == "space" then
+		self.engine:pop()
+		self.engine:push(screens.newGameScreen(self.engine))
+	end
+end
+
+function GameOverScreen:draw()
+	util.drawText("Your squad has died", self.engine.bold, conf.WHITE, 95, 55)
+
+	util.drawText("Level", self.engine.regular, conf.WHITE, 135, 75)
+	util.drawText(self.level, self.engine.regular, conf.WHITE, 175, 75)
+
+	util.drawText("Turns taken", self.engine.regular, conf.WHITE, 103, 85)
+	util.drawText(self.turnCount, self.engine.regular, conf.WHITE, 175, 85)
+
+	util.drawText("Bugs killed", self.engine.regular, conf.WHITE, 106, 95)
+	util.drawText(self.killCount, self.engine.regular, conf.WHITE, 175, 95)
+
+	util.drawText("< Press space to try again >", self.engine.bold, conf.WHITE, 70, 115)
+end
+
 local GameScreen = {}
 
 function screens.newGameScreen(engine)
@@ -34,6 +70,8 @@ function screens.newGameScreen(engine)
 
 	self.engine = engine
 	self.lvl = 1
+	self.turnCount = 0
+	self.killCount = 0
 	self.game = game.newGame(self.lvl, 80, 10)
 
 	return self
@@ -54,8 +92,15 @@ end
 function GameScreen:update(dt)
 	self.game:update(dt)
 
+	if self.game:isGameOver() or self.game:isVictory() then
+		local stats = self.game:stats()
+		self.turnCount = self.turnCount + stats.turnCount
+		self.killCount = self.killCount + stats.killCount
+	end
+
 	if self.game:isGameOver() then
 		self.engine:pop()
+		self.engine:push(screens.newGameOverScreen(self.engine, self.lvl, self.turnCount, self.killCount))
 	elseif self.game:isVictory() then
 		if self.lvl == levels.MAX_LEVEL then
 			self.engine:pop()
