@@ -12,6 +12,7 @@ conf.RED = { 172, 50, 50 }
 conf.GREY = { 105, 106, 106 }
 
 function love.conf(t)
+	t.window.title = "SpaceBugs"
 	t.window.width = 320 * conf.SCALE
 	t.window.height = 180 * conf.SCALE
 end

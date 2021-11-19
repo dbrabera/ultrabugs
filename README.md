@@ -1,6 +1,6 @@
-# Untitled
+# SpaceBugs
 
-Untitled is a tactical turn-based game built for the [Game Off 2021](https://itch.io/jam/game-off-2021) game jam using [LÖVE](https://love2d.org/).
+_SpaceBugs_ is a tactical turn-based game built for the [Game Off 2021](https://itch.io/jam/game-off-2021) game jam using [LÖVE](https://love2d.org/).
 
 ## Requirements
 
