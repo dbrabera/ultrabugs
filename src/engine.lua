@@ -16,6 +16,10 @@ end
 
 function Engine:load()
 	self.sprites = sprite.newSpriteAtlas("assets/sprites.png")
+
+	love.graphics.setDefaultFilter("nearest")
+
+	self.minimap = love.graphics.newImage("assets/minimap.png")
 	self.regular = love.graphics.newFont("assets/GravityRegular5.ttf", 5)
 	self.bold = love.graphics.newFont("assets/GravityBold8.ttf", 8)
 end

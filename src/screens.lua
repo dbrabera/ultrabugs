@@ -23,7 +23,7 @@ function MainScreen:keypressed(key)
 end
 
 function MainScreen:draw()
-	util.drawText("Press space to start", self.engine.bold, conf.WHITE, 90, 100)
+	util.drawText("< Press space to start >", self.engine.bold, conf.WHITE, 80, 115)
 end
 
 local GameOverScreen = {}
@@ -136,13 +136,14 @@ end
 
 function GameScreen:draw()
 	local hoveredUnit = self.game:getUnitAt(self.game.cursorGameX, self.game.cursorGameY)
+	local padding = 8
 
 	for i, unit in ipairs(self.game.playerUnits) do
-		local x, y = 4, 16 * (i - 1) + 4 * i
+		local x, y = padding, (conf.SPRITE_SIZE * (i - 1) + 4 * i) + padding
 		self.engine.sprites:draw(unit.kind.spriteID, x, y, unit:isAlive() and 1 or 0.3)
 
 		local color = self.game.selectedUnit == unit and conf.WHITE or conf.GREY
-		util.drawRectangle("line", x, y, 16, 16, color)
+		util.drawRectangle("line", x, y, conf.SPRITE_SIZE, conf.SPRITE_SIZE, color)
 
 		game.drawHealthbar(x + 18, y + 8, unit.health, unit.kind.maxHealth, false, color)
 	end
@@ -151,7 +152,7 @@ function GameScreen:draw()
 		local x, y = 250, 150
 
 		self.engine.sprites:draw(hoveredUnit.kind.spriteID, x, y)
-		util.drawRectangle("line", x, y, 16, 16, conf.GREY)
+		util.drawRectangle("line", x, y, conf.SPRITE_SIZE, conf.SPRITE_SIZE, conf.GREY)
 		game.drawHealthbar(x + 18, y + 8, hoveredUnit.health, hoveredUnit.kind.maxHealth, false, conf.GREY)
 		util.drawText(hoveredUnit.kind.name, self.engine.regular, conf.GREY, x + 18, y + 8)
 	end
@@ -161,15 +162,27 @@ function GameScreen:draw()
 	if self.game.selectedUnit then
 		local unit = self.game.selectedUnit
 
-		self.engine.sprites:draw(unit.kind.spriteID, 4, 130)
-		util.drawRectangle("line", 4, 130, 16, 16, conf.WHITE)
-		game.drawHealthbar(4 + 18, 130 + 8, unit.health, unit.kind.maxHealth, false, conf.WHITE)
-		util.drawText(unit.kind.name, self.engine.regular, conf.WHITE, 4 + 18, 130 + 8)
+		self.engine.sprites:draw(unit.kind.spriteID, padding, 130)
+		util.drawRectangle("line", padding, 130, conf.SPRITE_SIZE, conf.SPRITE_SIZE, conf.WHITE)
+		game.drawHealthbar(padding + 18, 130 + 8, unit.health, unit.kind.maxHealth, false, conf.WHITE)
+		util.drawText(unit.kind.name, self.engine.regular, conf.WHITE, padding + 18, 130 + 8)
 
-		self.engine.sprites:draw(icon(game.ACTION.MOVE, self.game.action, unit.hasMoved), 4, 150)
-		self.engine.sprites:draw(icon(game.ACTION.SHOOT, self.game.action, unit.hasShot), 20, 150)
-		self.engine.sprites:draw(icon(game.ACTION.FIGHT, self.game.action, unit.hasHit), 36, 150)
+		self.engine.sprites:draw(icon(game.ACTION.MOVE, self.game.action, unit.hasMoved), padding, 150)
+		self.engine.sprites:draw(
+			icon(game.ACTION.SHOOT, self.game.action, unit.hasShot),
+			padding + conf.SPRITE_SIZE,
+			150
+		)
+		self.engine.sprites:draw(
+			icon(game.ACTION.FIGHT, self.game.action, unit.hasHit),
+			padding + conf.SPRITE_SIZE * 2,
+			150
+		)
 	end
+
+	util.drawText("Level " .. self.lvl, self.engine.regular, conf.WHITE, 260, 10)
+	love.graphics.draw(self.engine.minimap, 270, 24)
+	util.drawRectangle("fill", 270, 24 + (10 * self.lvl), conf.SPRITE_SIZE, 100, conf.BLACK, 0.5)
 end
 
 return screens
