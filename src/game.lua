@@ -198,6 +198,15 @@ function Game:draw(sprites)
 		util.drawRectangle("line", x, y, 16, 16, conf.LIME)
 	end
 
+	-- draw the shadows before the units to ensure that they are below them
+	for _, unit in ipairs(self.playerUnits) do
+		self:drawUnitShadow(sprites, unit)
+	end
+
+	for _, unit in ipairs(self.enemyUnits) do
+		self:drawUnitShadow(sprites, unit)
+	end
+
 	for _, unit in ipairs(self.playerUnits) do
 		self:drawUnit(sprites, unit)
 	end
@@ -217,13 +226,22 @@ function Game:draw(sprites)
 	end
 end
 
+function Game:drawUnitShadow(sprites, unit)
+	if not unit:isAlive() then
+		return
+	end
+
+	local x, y = self:screenCoords(unit.gameX, unit.gameY)
+	sprites:draw(17, x, y)
+end
+
 function Game:drawUnit(sprites, unit)
 	if not unit:isAlive() then
 		return
 	end
 
 	local x, y = self:screenCoords(unit.gameX, unit.gameY)
-	sprites:draw(unit.kind.spriteID, x, y)
+	sprites:draw(unit.kind.spriteID, x, y - 3)
 
 	if unit.kind.isEnemy then
 		return
@@ -252,11 +270,11 @@ function Game:drawUnitIndicators(sprites, unit, withHealthBar)
 	local x, y = self:screenCoords(unit.gameX, unit.gameY)
 
 	if withHealthBar then
-		game.drawHealthbar(x + (conf.SPRITE_SIZE / 2), y, unit.health, unit.kind.maxHealth, true)
+		game.drawHealthbar(x + (conf.SPRITE_SIZE / 2), y - 3, unit.health, unit.kind.maxHealth, true)
 	end
 
 	if self:isPendingUnit(unit) then
-		sprites:draw(18, x, y - conf.SPRITE_SIZE - (withHealthBar and 9 or 0))
+		sprites:draw(18, x, y - conf.SPRITE_SIZE - (withHealthBar and 9 or 0) - 3)
 	end
 end
 

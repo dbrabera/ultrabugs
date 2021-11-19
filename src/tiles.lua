@@ -33,6 +33,7 @@ tiles.KIND = {
 	defkind("pool", 14, false, false),
 	defkind("pool", 15, false, false),
 	defkind("pool", 16, false, false),
+	defkind("ground", 19, true, false),
 }
 
 return tiles
