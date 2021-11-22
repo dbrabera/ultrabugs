@@ -1,3 +1,5 @@
+local conf = require("conf")
+
 local util = {}
 
 --- Returns the transformed coordinates according to the given scale.
@@ -141,13 +143,31 @@ function util.sign(n)
 	return n > 0 and 1 or -1
 end
 
-function util.drawText(text, font, color, x, y)
+util.ALING = {
+	LEFT = "left",
+	CENTER = "center",
+	RIGHT = "right",
+}
+
+function util.drawText(text, font, color, x, y, align)
+	if not align then
+		align = util.ALING.LEFT
+	end
+
+	local width = font:getWidth(text)
+
+	if align == util.ALING.CENTER then
+		x = x - (width / 2)
+	elseif align == util.ALING.RIGHT then
+		x = x - width
+	end
+
 	love.graphics.setFont(font)
 	love.graphics.setColor(color[1] / 255, color[2] / 255, color[3] / 255)
 	love.graphics.print(text, x, y)
 end
 
---- Draws a rectangle with the given color
+--- Draws a rectangle with the given color.
 function util.drawRectangle(mode, x, y, w, h, color, alpha)
 	if not alpha then
 		alpha = 1
@@ -155,6 +175,11 @@ function util.drawRectangle(mode, x, y, w, h, color, alpha)
 
 	love.graphics.setColor(color[1] / 255, color[2] / 255, color[3] / 255, alpha)
 	love.graphics.rectangle(mode, x, y, w, h)
+end
+
+--- Returns the center of the screen.
+function util.screenCenter()
+	return conf.SCREEN_WIDTH / 2, conf.SCREEN_HEIGHT / 2
 end
 
 return util

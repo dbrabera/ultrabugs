@@ -8,7 +8,7 @@ local util = require("util")
 local game = {}
 
 -- Time to wait on a *_TRANSITION state
-local TRANSITION_DELAY_SECONDS = 0.5
+local TRANSITION_DELAY_SECONDS = 0.6
 -- Time to wait on the ENEMY_MOVE state
 local ENEMY_MOVE_DELAY_SECONDS = 0.3
 

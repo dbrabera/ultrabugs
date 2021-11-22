@@ -23,7 +23,9 @@ function MainScreen:keypressed(key)
 end
 
 function MainScreen:draw()
-	util.drawText("< Press space to start >", self.engine.bold, conf.WHITE, 80, 115)
+	local x, _ = util.screenCenter()
+
+	util.drawText("< Press space to start >", self.engine.bold, conf.WHITE, x, 115, util.ALING.CENTER)
 end
 
 local GameOverScreen = {}
@@ -48,7 +50,9 @@ function GameOverScreen:keypressed(key)
 end
 
 function GameOverScreen:draw()
-	util.drawText("Your squad has died", self.engine.bold, conf.WHITE, 95, 55)
+	local x, _ = util.screenCenter()
+
+	util.drawText("Your squad has died", self.engine.bold, conf.WHITE, x, 55, util.ALING.CENTER)
 
 	util.drawText("Level", self.engine.regular, conf.WHITE, 135, 75)
 	util.drawText(self.level, self.engine.regular, conf.WHITE, 175, 75)
@@ -59,7 +63,42 @@ function GameOverScreen:draw()
 	util.drawText("Bugs killed", self.engine.regular, conf.WHITE, 106, 95)
 	util.drawText(self.killCount, self.engine.regular, conf.WHITE, 175, 95)
 
-	util.drawText("< Press space to try again >", self.engine.bold, conf.WHITE, 70, 115)
+	util.drawText("< Press space to try again >", self.engine.bold, conf.WHITE, x, 115, util.ALING.CENTER)
+end
+
+local VictoryScreen = {}
+
+function screens.newVictoryScreen(engine, level, turnCount, killCount)
+	local self = {}
+	setmetatable(self, { __index = VictoryScreen })
+
+	self.engine = engine
+	self.level = level
+	self.turnCount = turnCount
+	self.killCount = killCount
+
+	return self
+end
+
+function VictoryScreen:keypressed(key)
+	if key == "space" then
+		self.engine:pop()
+	end
+end
+
+function VictoryScreen:draw()
+	local x, _ = util.screenCenter()
+
+	util.drawText("Victory", self.engine.bold, conf.WHITE, x, 50, util.ALING.CENTER)
+	util.drawText("Your squad defeated the queen.", self.engine.bold, conf.WHITE, x, 65, util.ALING.CENTER)
+
+	util.drawText("Turns taken", self.engine.regular, conf.WHITE, 103, 85)
+	util.drawText(self.turnCount, self.engine.regular, conf.WHITE, 175, 85)
+
+	util.drawText("Bugs killed", self.engine.regular, conf.WHITE, 106, 95)
+	util.drawText(self.killCount, self.engine.regular, conf.WHITE, 175, 95)
+
+	util.drawText("< Press space to quit >", self.engine.bold, conf.WHITE, x, 115, util.ALING.CENTER)
 end
 
 local GameScreen = {}
@@ -100,7 +139,7 @@ function GameScreen:update(dt)
 	elseif self.game.state == game.STATE.VICTORY then
 		self:trackStats()
 
-		if self.level == levels.MAX_LEVEL then
+		if self.level == levels.MAX_LEVEL or true then
 			self.engine:pop()
 		else
 			self.level = self.level + 1
@@ -216,11 +255,13 @@ function GameScreen:draw()
 end
 
 function GameScreen:drawMessage(msg)
+	local centerX, centerY = util.screenCenter()
 	local height, padding = 30, 2
-	local y = conf.SCREEN_HEIGHT / 2 - height / 2
+	local y = centerY - height / 2
+
 	util.drawRectangle("fill", 0, y, conf.SCREEN_WIDTH, height, conf.BLACK)
 	util.drawRectangle("line", padding, y + padding, conf.SCREEN_WIDTH - padding * 2, height - padding * 2, conf.WHITE)
-	util.drawText(msg, self.engine.bold, conf.WHITE, (conf.SCREEN_WIDTH / 2) - (string.len(msg) * 8 / 2), y + 11)
+	util.drawText(msg, self.engine.bold, conf.WHITE, centerX, y + 11, util.ALING.CENTER)
 end
 
 return screens
