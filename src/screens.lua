@@ -69,10 +69,10 @@ function screens.newGameScreen(engine)
 	setmetatable(self, { __index = GameScreen })
 
 	self.engine = engine
-	self.lvl = 1
+	self.level = 1
 	self.turnCount = 0
 	self.killCount = 0
-	self.game = game.newGame(self.lvl, 80, 10)
+	self.game = game.newGame(self.level, 80, 10)
 
 	return self
 end
@@ -92,23 +92,27 @@ end
 function GameScreen:update(dt)
 	self.game:update(dt)
 
-	if self.game:isGameOver() or self.game:isVictory() then
-		local stats = self.game:stats()
-		self.turnCount = self.turnCount + stats.turnCount
-		self.killCount = self.killCount + stats.killCount
-	end
+	if self.game.state == game.STATE.GAME_OVER then
+		self:trackStats()
 
-	if self.game:isGameOver() then
 		self.engine:pop()
-		self.engine:push(screens.newGameOverScreen(self.engine, self.lvl, self.turnCount, self.killCount))
-	elseif self.game:isVictory() then
-		if self.lvl == levels.MAX_LEVEL then
+		self.engine:push(screens.newGameOverScreen(self.engine, self.level, self.turnCount, self.killCount))
+	elseif self.game.state == game.STATE.VICTORY then
+		self:trackStats()
+
+		if self.level == levels.MAX_LEVEL then
 			self.engine:pop()
 		else
-			self.lvl = self.lvl + 1
-			self.game = game.newGame(self.lvl, 80, 10, self.game.playerUnits)
+			self.level = self.level + 1
+			self.game = game.newGame(self.level, 80, 10, self.game.playerUnits)
 		end
 	end
+end
+
+function GameScreen:trackStats()
+	local stats = self.game:stats()
+	self.turnCount = self.turnCount + stats.turnCount
+	self.killCount = self.killCount + stats.killCount
 end
 
 local ICONS = {
@@ -116,6 +120,8 @@ local ICONS = {
 	SHOOT = { 46, 54, 62 },
 	FIGHT = { 47, 55, 63 },
 }
+
+local START_FADE_DELAY_SECONDS = 0.5
 
 local function icon(action, selectedAction, disabled)
 	local idx = 3
@@ -180,9 +186,41 @@ function GameScreen:draw()
 		)
 	end
 
-	util.drawText("Level " .. self.lvl, self.engine.regular, conf.WHITE, 260, 10)
+	util.drawText("Level " .. self.level, self.engine.regular, conf.WHITE, 260, 10)
 	love.graphics.draw(self.engine.minimap, 270, 24)
-	util.drawRectangle("fill", 270, 24 + (10 * self.lvl), conf.SPRITE_SIZE, 100, conf.BLACK, 0.5)
+	util.drawRectangle("fill", 270, 24 + (10 * self.level), conf.SPRITE_SIZE, 100, conf.BLACK, 0.5)
+
+	if self.game.state == game.STATE.START_TRANSITION then
+		util.drawRectangle(
+			"fill",
+			0,
+			0,
+			conf.SCREEN_WIDTH,
+			conf.SCREEN_HEIGHT,
+			conf.BLACK,
+			1 - self.game.stateSince - START_FADE_DELAY_SECONDS
+		)
+	elseif self.game.state == game.STATE.PLAYER_TURN_TRANSITION then
+		self:drawMessage("PLAYER TURN")
+	elseif self.game.state == game.STATE.ENEMY_TURN_TRANSITION then
+		self:drawMessage("ENEMY TURN")
+	elseif self.game.state == game.STATE.GAME_OVER_TRANSITION then
+		self:drawMessage("GAME OVER")
+	elseif self.game.state == game.STATE.VICTORY_TRANSITION then
+		if self.level == levels.MAX_LEVEL then
+			self:drawMessage("VICTORY")
+		else
+			self:drawMessage("LEVEL COMPLETED")
+		end
+	end
+end
+
+function GameScreen:drawMessage(msg)
+	local height, padding = 30, 2
+	local y = conf.SCREEN_HEIGHT / 2 - height / 2
+	util.drawRectangle("fill", 0, y, conf.SCREEN_WIDTH, height, conf.BLACK)
+	util.drawRectangle("line", padding, y + padding, conf.SCREEN_WIDTH - padding * 2, height - padding * 2, conf.WHITE)
+	util.drawText(msg, self.engine.bold, conf.WHITE, (conf.SCREEN_WIDTH / 2) - (string.len(msg) * 8 / 2), y + 11)
 end
 
 return screens

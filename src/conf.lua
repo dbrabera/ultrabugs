@@ -2,6 +2,8 @@ local conf = {}
 
 conf.GRID_SIZE = 10
 conf.SPRITE_SIZE = 16
+conf.SCREEN_WIDTH = 320
+conf.SCREEN_HEIGHT = 180
 conf.SCALE = 4
 
 conf.WHITE = { 255, 255, 255 }
@@ -13,8 +15,8 @@ conf.GREY = { 105, 106, 106 }
 
 function love.conf(t)
 	t.window.title = "SpaceBugs"
-	t.window.width = 320 * conf.SCALE
-	t.window.height = 180 * conf.SCALE
+	t.window.width = conf.SCREEN_WIDTH * conf.SCALE
+	t.window.height = conf.SCREEN_HEIGHT * conf.SCALE
 end
 
 return conf

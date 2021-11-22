@@ -9,38 +9,58 @@ function enemy.newEnemy(game)
 	setmetatable(self, { __index = Enemy })
 
 	self.game = game
-
 	return self
 end
 
-function Enemy:takeTurn()
+function Enemy:takeTurn(dt)
 	for _, unit in ipairs(self.game.enemyUnits) do
-		if unit:isAlive() then
-			self:useUnit(unit)
+		if self:doUnitAction(unit) then
+			self.lastActionAgo = 0
+			return false
 		end
 	end
+	return true
 end
 
-function Enemy:useUnit(unit)
+--- Checks whether the unit as any pending actions in the turn.
+function Enemy:isPendingUnit(unit)
+	return unit:isAlive() and not (unit.hasMoved and unit.hasShot and unit.hasHit)
+end
+
+--- Uses the unit to do an action. It returns a boolean indicating whether any action was done or the unit was skipped.
+function Enemy:doUnitAction(unit)
+	if not self:isPendingUnit(unit) then
+		return false
+	end
+
 	local target, playerPath = self:findClosestPlayerUnit(unit)
 	if not playerPath then
-		return
+		unit:skipTurn()
+		return false
 	end
 
 	local next = table.remove(playerPath)
 
-	if self.game:isAllowed(target, self.game:allowedShots(unit)) then
+	if not unit.hasShot and self.game:isAllowed(target, self.game:allowedShots(unit)) then
 		unit:shoot(target)
-		return
+		return true
 	end
 
-	if self.game:isWalkable(next.x, next.y) and self.game:isEmpty(next.x, next.y) then
+	if not unit.hasMoved and self.game:isWalkable(next.x, next.y) and self.game:isEmpty(next.x, next.y) then
 		unit:move(next.x, next.y)
+		return true
+	else
+		unit.hasMoved = true
 	end
 
-	if self.game:isAllowed(target, self.game:allowedHits(unit)) then
+	if not unit.hasHit and self.game:isAllowed(target, self.game:allowedHits(unit)) then
 		unit:hit(target)
+		return true
+	else
+		unit.hasHit = true
 	end
+
+	return false
 end
 
 --- Returns the closest player unit. If two player units are at the same distance it returns the one

@@ -44,6 +44,12 @@ function unit.newUnit(kind, gameX, gameY)
 	return self
 end
 
+function Unit:skipTurn()
+	self.hasMoved = true
+	self.hasShot = true
+	self.hasHit = true
+end
+
 function Unit:resetTurn()
 	self.hasMoved = false
 	self.hasShot = false

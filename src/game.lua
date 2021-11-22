@@ -7,9 +7,22 @@ local util = require("util")
 
 local game = {}
 
-game.TURN = {
-	PLAYER = "player",
-	ENEMY = "enemy",
+-- Time to wait on a *_TRANSITION state
+local TRANSITION_DELAY_SECONDS = 0.5
+-- Time to wait on the ENEMY_MOVE state
+local ENEMY_MOVE_DELAY_SECONDS = 0.3
+
+game.STATE = {
+	START_TRANSITION = "start_transition",
+	ENEMY_MOVE = "enemy_move",
+	ENEMY_TURN = "enemy_turn",
+	ENEMY_TURN_TRANSITION = "enemy_turn_transition",
+	GAME_OVER = "game_over",
+	GAME_OVER_TRANSITION = "game_over_transition",
+	PLAYER_TURN = "player_turn",
+	PLAYER_TURN_TRANSITION = "player_turn_transition",
+	VICTORY = "victory",
+	VICTORY_TRANSITION = "victory_transition",
 }
 
 game.ACTION = {
@@ -47,7 +60,9 @@ function game.newGame(lvl, screenX, screenY, playerUnits)
 	self.cursorGameX = -1
 	self.cursorGameY = -1
 
-	self.turn = game.TURN.PLAYER
+	self.state = game.STATE.START_TRANSITION
+	self.stateSince = 0
+
 	self.action = game.ACTION.MOVE
 	self.turnCount = 0
 
@@ -55,7 +70,7 @@ function game.newGame(lvl, screenX, screenY, playerUnits)
 end
 
 function Game:keypressed(key)
-	if self.turn ~= game.TURN.PLAYER then
+	if self.state ~= game.STATE.PLAYER_TURN then
 		return
 	end
 
@@ -81,15 +96,21 @@ end
 function Game:endPlayerTurn()
 	self.action = game.ACTION.MOVE
 	self.selectedUnit = nil
-	self.turn = game.TURN.ENEMY
+
 	for _, unit in ipairs(self.playerUnits) do
 		unit:resetTurn()
 	end
 	self.turnCount = self.turnCount + 1
+
+	if self:isVictory() then
+		self:advaceState(game.STATE.VICTORY_TRANSITION)
+	else
+		self:advaceState(game.STATE.ENEMY_TURN_TRANSITION)
+	end
 end
 
 function Game:mousepressed(x, y, button)
-	if self.turn ~= game.TURN.PLAYER then
+	if self.state ~= game.STATE.PLAYER_TURN then
 		return
 	end
 
@@ -143,16 +164,58 @@ function Game:mousemoved(x, y)
 end
 
 function Game:update(dt)
-	if self.turn ~= game.TURN.ENEMY then
+	self.stateSince = self.stateSince + dt
+
+	if self.state == game.STATE.START_TRANSITION then
+		if self.stateSince >= TRANSITION_DELAY_SECONDS then
+			self:advaceState(game.STATE.PLAYER_TURN)
+		end
+	elseif self.state == game.STATE.PLAYER_TURN then
+		if self:isVictory() then
+			self:advaceState(game.STATE.VICTORY_TRANSITION)
+		end
 		return
-	end
+	elseif self.state == game.STATE.ENEMY_TURN then
+		if self.enemy:takeTurn(dt) then
+			for _, unit in ipairs(self.enemyUnits) do
+				unit:resetTurn()
+			end
 
-	self.enemy:takeTurn()
-	for _, unit in ipairs(self.enemyUnits) do
-		unit:resetTurn()
-	end
+			if self:isGameOver() then
+				self:advaceState(game.STATE.GAME_OVER_TRANSITION)
+			else
+				self:advaceState(game.STATE.PLAYER_TURN_TRANSITION)
+			end
 
-	self.turn = game.TURN.PLAYER
+			return
+		end
+		self:advaceState(game.STATE.ENEMY_MOVE)
+	elseif self.state == game.STATE.ENEMY_MOVE then
+		if self.stateSince >= ENEMY_MOVE_DELAY_SECONDS then
+			self:advaceState(game.STATE.ENEMY_TURN)
+		end
+	elseif self.state == game.STATE.PLAYER_TURN_TRANSITION then
+		if self.stateSince >= TRANSITION_DELAY_SECONDS then
+			self:advaceState(game.STATE.PLAYER_TURN)
+		end
+	elseif self.state == game.STATE.ENEMY_TURN_TRANSITION then
+		if self.stateSince >= TRANSITION_DELAY_SECONDS then
+			self:advaceState(game.STATE.ENEMY_TURN)
+		end
+	elseif self.state == game.STATE.GAME_OVER_TRANSITION then
+		if self.stateSince >= TRANSITION_DELAY_SECONDS then
+			self:advaceState(game.STATE.GAME_OVER)
+		end
+	elseif self.state == game.STATE.VICTORY_TRANSITION then
+		if self.stateSince >= TRANSITION_DELAY_SECONDS then
+			self:advaceState(game.STATE.VICTORY)
+		end
+	end
+end
+
+function Game:advaceState(state)
+	self.state = state
+	self.stateSince = 0
 end
 
 function Game:draw(sprites)
@@ -408,7 +471,7 @@ function Game:isSolid(x, y)
 end
 
 function Game:isPendingUnit(unit)
-	if self.turn ~= game.TURN.PLAYER or unit.kind.isEnemy or not unit:isAlive() then
+	if self.state ~= game.STATE.PLAYER_TURN or unit.kind.isEnemy or not unit:isAlive() then
 		return false
 	end
 	return not unit.hasMoved
