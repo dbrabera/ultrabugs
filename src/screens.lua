@@ -23,9 +23,12 @@ function MainScreen:keypressed(key)
 end
 
 function MainScreen:draw()
-	local x, _ = util.screenCenter()
+	love.graphics.draw(self.engine.title, 0, 0)
 
-	util.drawText("< Press space to start >", self.engine.bold, conf.WHITE, x, 115, util.ALING.CENTER)
+	local x, _ = util.screenCenter()
+	util.drawText("A GAME BY", self.engine.regular, conf.GREY, x, 95, util.ALING.CENTER)
+	util.drawText("DIEGO BARBERA", self.engine.regular, conf.GREY, x, 105, util.ALING.CENTER)
+	util.drawText("< Press space to start >", self.engine.bold, conf.WHITE, x, 125, util.ALING.CENTER)
 end
 
 local GameOverScreen = {}
