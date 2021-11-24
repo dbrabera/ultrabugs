@@ -1,32 +1,22 @@
-local conf = require("conf")
-
 local sprite = {}
 
 local SpriteAtlas = {}
 
-function sprite.newSpriteAtlas(path)
+function sprite.newSpriteAtlas(path, size)
 	local self = {}
 	setmetatable(self, { __index = SpriteAtlas })
 
 	love.graphics.setDefaultFilter("nearest")
 
 	self.img = love.graphics.newImage(path)
+	self.size = size
 
 	local width, height = self.img:getDimensions()
 	self.quads = {}
 
-	for j = 0, (height / conf.SPRITE_SIZE) - 1 do
-		for i = 0, (width / conf.SPRITE_SIZE) - 1 do
-			table.insert(
-				self.quads,
-				love.graphics.newQuad(
-					i * conf.SPRITE_SIZE,
-					j * conf.SPRITE_SIZE,
-					conf.SPRITE_SIZE,
-					conf.SPRITE_SIZE,
-					self.img
-				)
-			)
+	for j = 0, (height / size) - 1 do
+		for i = 0, (width / size) - 1 do
+			table.insert(self.quads, love.graphics.newQuad(i * size, j * size, size, size, self.img))
 		end
 	end
 
@@ -36,6 +26,18 @@ end
 function SpriteAtlas:draw(id, x, y, alpha)
 	love.graphics.setColor(1, 1, 1, alpha or 1)
 	love.graphics.draw(self.img, self.quads[id], x, y)
+end
+
+function SpriteAtlas:imageData(id, scale)
+	local canvas = love.graphics.getCanvas()
+	local tmp = love.graphics.newCanvas(self.size * scale, self.size * scale)
+	love.graphics.setCanvas(tmp)
+
+	love.graphics.scale(scale, scale)
+	love.graphics.draw(self.img, self.quads[id], 0, 0)
+
+	love.graphics.setCanvas(canvas)
+	return tmp:newImageData()
 end
 
 return sprite
