@@ -116,6 +116,16 @@ function screens.newGameScreen(engine)
 	self.killCount = 0
 	self.game = game.newGame(self.level, 80, 10)
 
+	self.moveBtn = screens.newSpriteButton(engine, 37, "1", 8, 150, function()
+		self.game:selectAction(game.ACTION.MOVE)
+	end)
+	self.shootBtn = screens.newSpriteButton(engine, 45, "2", 8 + conf.SPRITE_SIZE, 150, function()
+		self.game:selectAction(game.ACTION.SHOOT)
+	end)
+	self.hitBtn = screens.newSpriteButton(engine, 53, "3", 8 + conf.SPRITE_SIZE * 2, 150, function()
+		self.game:selectAction(game.ACTION.HIT)
+	end)
+
 	return self
 end
 
@@ -129,6 +139,9 @@ end
 
 function GameScreen:mousepressed(x, y, button)
 	self.game:mousepressed(x, y, button)
+	self.moveBtn:mousepressed(x, y, button)
+	self.shootBtn:mousepressed(x, y, button)
+	self.hitBtn:mousepressed(x, y, button)
 end
 
 function GameScreen:update(dt)
@@ -158,30 +171,7 @@ function GameScreen:trackStats()
 	self.killCount = self.killCount + stats.killCount
 end
 
-local ICONS = {
-	MOVE = { 45, 53, 61 },
-	SHOOT = { 46, 54, 62 },
-	FIGHT = { 47, 55, 63 },
-}
-
 local START_FADE_DELAY_SECONDS = 0.5
-
-local function icon(action, selectedAction, disabled)
-	local idx = 3
-	if disabled then
-		idx = 1
-	elseif action == selectedAction then
-		idx = 2
-	end
-
-	if action == game.ACTION.MOVE then
-		return ICONS.MOVE[idx]
-	elseif action == game.ACTION.SHOOT then
-		return ICONS.SHOOT[idx]
-	elseif action == game.ACTION.FIGHT then
-		return ICONS.FIGHT[idx]
-	end
-end
 
 function GameScreen:draw()
 	local hoveredUnit = self.game:getUnitAt(self.game.cursorGameX, self.game.cursorGameY)
@@ -216,17 +206,9 @@ function GameScreen:draw()
 		game.drawHealthbar(padding + 18, 130 + 8, unit.health, unit.kind.maxHealth, false, conf.WHITE)
 		util.drawText(unit.kind.name, self.engine.regular, conf.WHITE, padding + 18, 130 + 8)
 
-		self.engine.sprites:draw(icon(game.ACTION.MOVE, self.game.action, unit.hasMoved), padding, 150)
-		self.engine.sprites:draw(
-			icon(game.ACTION.SHOOT, self.game.action, unit.hasShot),
-			padding + conf.SPRITE_SIZE,
-			150
-		)
-		self.engine.sprites:draw(
-			icon(game.ACTION.FIGHT, self.game.action, unit.hasHit),
-			padding + conf.SPRITE_SIZE * 2,
-			150
-		)
+		self.moveBtn:draw(self.game:isMoving(), self.game.selectedUnit.hasMoved)
+		self.shootBtn:draw(self.game:isShooting(), self.game.selectedUnit.hasShot)
+		self.hitBtn:draw(self.game:isHitting(), self.game.selectedUnit.hasHit)
 	end
 
 	util.drawText("Level " .. self.level, self.engine.regular, conf.WHITE, 260, 10)
@@ -258,6 +240,10 @@ function GameScreen:draw()
 	end
 end
 
+function GameScreen:drawButton(spriteID, x, y, selected, disabled)
+	self.engine.sprites:draw(spriteID, x, y)
+end
+
 function GameScreen:drawMessage(msg)
 	local centerX, centerY = util.screenCenter()
 	local height, padding = 30, 2
@@ -266,6 +252,68 @@ function GameScreen:drawMessage(msg)
 	util.drawRectangle("fill", 0, y, conf.SCREEN_WIDTH, height, conf.BLACK)
 	util.drawRectangle("line", padding, y + padding, conf.SCREEN_WIDTH - padding * 2, height - padding * 2, conf.WHITE)
 	util.drawText(msg, self.engine.bold, conf.WHITE, centerX, y + 11, util.ALING.CENTER)
+end
+
+local SpriteButton = {}
+
+function screens.newSpriteButton(engine, spriteID, caption, x, y, func)
+	local self = {}
+	setmetatable(self, { __index = SpriteButton })
+
+	self.engine = engine
+	self.spriteID = spriteID
+	self.caption = caption
+	self.x = x
+	self.y = y
+	self.func = func
+
+	return self
+end
+
+function SpriteButton:isHovered()
+	local mx, my = love.mouse.getPosition()
+	mx, my = util.scaledCoords(mx, my, conf.SCALE)
+	return self:isOver(mx, my)
+end
+
+function SpriteButton:isOver(x, y)
+	return self.x <= x and x <= self.x + conf.SPRITE_SIZE and self.y <= y and y <= self.y + conf.SPRITE_SIZE
+end
+
+function SpriteButton:mousepressed(x, y, button)
+	if button ~= 1 then
+		return
+	end
+
+	if self:isOver(x, y) then
+		self.func()
+	end
+end
+
+function SpriteButton:draw(selected, disabled)
+	local spriteID = self.spriteID
+	local color = conf.GREY
+
+	if disabled then
+		spriteID = spriteID + 3
+		color = conf.DARK_GREY
+	elseif selected then
+		spriteID = spriteID + 2
+		color = conf.WHITE
+	elseif self:isHovered() then
+		spriteID = spriteID + 1
+		color = conf.LIGHT_BLUE
+	end
+
+	self.engine.sprites:draw(spriteID, self.x, self.y)
+	util.drawText(
+		self.caption,
+		self.engine.regular,
+		color,
+		self.x + conf.SPRITE_SIZE / 2,
+		self.y + 17,
+		util.ALING.CENTER
+	)
 end
 
 return screens

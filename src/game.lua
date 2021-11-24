@@ -28,7 +28,7 @@ game.STATE = {
 game.ACTION = {
 	MOVE = "move",
 	SHOOT = "shoot",
-	FIGHT = "fight",
+	HIT = "hit",
 }
 
 local Game = {}
@@ -77,20 +77,21 @@ function Game:keypressed(key)
 	if key == "space" then
 		self:endPlayerTurn()
 	elseif key == "1" then
-		if self.selectedUnit then
-			self.action = game.ACTION.MOVE
-		end
+		self:selectAction(game.ACTION.MOVE)
 	elseif key == "2" then
-		if self.selectedUnit then
-			self.action = game.ACTION.SHOOT
-		end
+		self:selectAction(game.ACTION.SHOOT)
 	elseif key == "3" then
-		if self.selectedUnit then
-			self.action = game.ACTION.FIGHT
-		end
+		self:selectAction(game.ACTION.HIT)
 	elseif key == "escape" then
 		self.selectedUnit = nil
 	end
+end
+
+function Game:selectAction(action)
+	if self.state ~= game.STATE.PLAYER_TURN or not self.selectedUnit then
+		return
+	end
+	self.action = action
 end
 
 function Game:endPlayerTurn()
@@ -116,6 +117,7 @@ function Game:mousepressed(x, y, button)
 
 	if button == 2 then
 		self.selectedUnit = nil
+		self.action = game.ACTION.MOVE
 		return
 	end
 
@@ -152,7 +154,7 @@ function Game:mousepressed(x, y, button)
 		if self:canShoot(self.selectedUnit, target) then
 			self.selectedUnit:shoot(target)
 		end
-	elseif self.action == game.ACTION.FIGHT then
+	elseif self.action == game.ACTION.HIT then
 		if self:canHit(self.selectedUnit, target) then
 			self.selectedUnit:hit(target)
 		end
@@ -243,7 +245,7 @@ function Game:draw(sprites)
 			local color = conf.LIME
 			if self.action == game.ACTION.SHOOT then
 				color = conf.YELLOW
-			elseif self.action == game.ACTION.FIGHT then
+			elseif self.action == game.ACTION.HIT then
 				color = conf.RED
 			end
 
@@ -341,12 +343,24 @@ function Game:drawUnitIndicators(sprites, unit, withHealthBar)
 	end
 end
 
+function Game:isMoving()
+	return self.action == game.ACTION.MOVE
+end
+
+function Game:isShooting()
+	return self.action == game.ACTION.SHOOT
+end
+
+function Game:isHitting()
+	return self.action == game.ACTION.HIT
+end
+
 function Game:allowedActions(unit)
-	if self.action == game.ACTION.MOVE then
+	if self:isMoving() then
 		return self:allowedMovements(unit)
-	elseif self.action == game.ACTION.FIGHT then
+	elseif self:isHitting() then
 		return self:allowedHits(unit)
-	elseif self.action == game.ACTION.SHOOT then
+	elseif self:isShooting() then
 		return self:allowedShots(unit)
 	end
 end
