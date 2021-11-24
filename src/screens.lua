@@ -139,8 +139,9 @@ function GameScreen:update(dt)
 	elseif self.game.state == game.STATE.VICTORY then
 		self:trackStats()
 
-		if self.level == levels.MAX_LEVEL or true then
+		if self.level == levels.MAX_LEVEL then
 			self.engine:pop()
+			self.engine:push(screens.newVictoryScreen(self.engine, self.level, self.turnCount, self.killCount))
 		else
 			self.level = self.level + 1
 			self.game = game.newGame(self.level, 80, 10, self.game.playerUnits)
