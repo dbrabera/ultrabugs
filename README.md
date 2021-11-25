@@ -2,6 +2,8 @@
 
 _UltraBugs_ is a tactical turn-based game built for the [Game Off 2021](https://itch.io/jam/game-off-2021) game jam using [LÖVE](https://love2d.org/).
 
+Play it on [itch.io](https://dbrabera.itch.io/ultrabugs).
+
 ## Requirements
 
 - LÖVE v11.3
