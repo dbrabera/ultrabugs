@@ -22,12 +22,13 @@ function Engine:load()
 
 	self.minimap = love.graphics.newImage("assets/minimap.png")
 	self.title = love.graphics.newImage("assets/title.png")
+
 	self.regular = love.graphics.newFont("assets/GravityRegular5.ttf", 5)
 	self.bold = love.graphics.newFont("assets/GravityBold8.ttf", 8)
 
-	local cursorSprites = sprite.newSpriteAtlas("assets/cursors.png", conf.SPRITE_SIZE * 2)
+	self.cursorSprites = sprite.newSpriteAtlas("assets/cursors.png", conf.SPRITE_SIZE * 2)
+	self.cursor = love.mouse.newCursor(self.cursorSprites:imageData(1, 2))
 
-	self.cursor = love.mouse.newCursor(cursorSprites:imageData(1, 2))
 	love.mouse.setCursor(self.cursor)
 end
 

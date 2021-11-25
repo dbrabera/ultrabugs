@@ -27,6 +27,7 @@ function util.newQueue(elems)
 	return self
 end
 
+--- Returns the number of elements in the queue.
 function Queue:len()
 	if self.first > self.last then
 		return 0
@@ -143,12 +144,14 @@ function util.sign(n)
 	return n > 0 and 1 or -1
 end
 
+--- Enumerates the different text alignments.
 util.ALING = {
 	LEFT = "left",
 	CENTER = "center",
 	RIGHT = "right",
 }
 
+--- Draws the text using the given font, color and an optional alignment.
 function util.drawText(text, font, color, x, y, align)
 	if not align then
 		align = util.ALING.LEFT
@@ -167,7 +170,7 @@ function util.drawText(text, font, color, x, y, align)
 	love.graphics.print(text, x, y)
 end
 
---- Draws a rectangle with the given color.
+--- Draws a rectangle with the given color and an optional alpha transparency.
 function util.drawRectangle(mode, x, y, w, h, color, alpha)
 	if not alpha then
 		alpha = 1
