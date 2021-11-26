@@ -165,7 +165,7 @@ function GameScreen:update(dt)
 	end
 end
 
-local function drawHealthbar(x, y, health, maxHealth, centered, borderColor)
+local function drawHealthbar(x, y, health, maxHealth, centered, borderColor, damage)
 	borderColor = borderColor or conf.WHITE
 	local w = 4 * maxHealth + 1 - (1 * (maxHealth - 1))
 
@@ -176,9 +176,16 @@ local function drawHealthbar(x, y, health, maxHealth, centered, borderColor)
 	util.drawRectangle("fill", x, y - 8, 4 * health, 5, conf.BLACK)
 	util.drawRectangle("line", x, y - 8, w, 5, borderColor)
 
-	for i = 1, health do
+	for i = 1, maxHealth do
+		local color = conf.LIME
+		if i > health then
+			color = conf.BLACK
+		elseif damage and i > health - damage then
+			color = conf.RED
+		end
+
 		local xi, yi = x + 3 * (i - 1) + 1, y - 7
-		util.drawRectangle("fill", xi, yi, 3, 3, conf.LIME)
+		util.drawRectangle("fill", xi, yi, 3, 3, color)
 		util.drawRectangle("line", xi, yi, 3, 3, conf.BLACK)
 	end
 end
@@ -315,6 +322,25 @@ function GamePanel:getHoveredUnit()
 	return self.game:getUnitAt(gameX, gameY)
 end
 
+function GamePanel:getTargetedUnit()
+	if not self.game.selectedUnit then
+		return nil
+	end
+
+	local hoveredUnit = self:getHoveredUnit()
+	if not hoveredUnit or not hoveredUnit.kind.isEnemy then
+		return nil
+	end
+
+	if self.game:isShooting() and self.game:canShoot(self.game.selectedUnit, hoveredUnit) then
+		return hoveredUnit
+	elseif self.game:isHitting() and self.game:canHit(self.game.selectedUnit, hoveredUnit) then
+		return hoveredUnit
+	end
+
+	return nil
+end
+
 function GamePanel:getPlayableUnit()
 	if self.game.selectedUnit then
 		return self.game.selectedUnit
@@ -338,13 +364,13 @@ function GamePanel:draw()
 	self:drawGrid()
 
 	if self.game.state == game.STATE.PLAYER_TURN then
-		self:drawPlayableTiles()
-		self:drawCursor()
-
 		if self.game.selectedUnit then
 			local x, y = self:screenCoords(self.game.selectedUnit.gameX, self.game.selectedUnit.gameY)
 			util.drawRectangle("line", x, y, 16, 16, conf.LIME)
 		end
+
+		self:drawPlayableTiles()
+		self:drawCursor()
 	end
 
 	-- draw the shadows before the units to ensure that they are below them
@@ -370,11 +396,12 @@ function GamePanel:draw()
 		local hoveredUnit = self:getHoveredUnit()
 
 		for _, unit in ipairs(self.game.playerUnits) do
-			self:drawUnitIndicators(unit, unit == self.selectedUnit or unit == hoveredUnit)
+			self:drawUnitIndicators(unit, unit == self.selectedUnit, unit == hoveredUnit)
 		end
 
+		local targetedUnit = self:getTargetedUnit()
 		for _, unit in ipairs(self.game.enemyUnits) do
-			self:drawUnitIndicators(unit, unit == self.selectedUnit or unit == hoveredUnit)
+			self:drawUnitIndicators(unit, unit == self.selectedUnit, unit == hoveredUnit, unit == targetedUnit)
 		end
 	end
 end
@@ -411,10 +438,18 @@ end
 
 function GamePanel:drawCursor()
 	local gameX, gameY = self:getGameCursorPosition()
+	local target = self.game:getUnitAt(gameX, gameY)
+
+	local color = conf.WHITE
+	if target and target == self.game.selectedUnit then
+		color = conf.LIME
+	elseif self.game:canTarget(gameX, gameY) then
+		color = conf.YELLOW
+	end
 
 	if self.game:isInbounds(gameX, gameY) then
 		local x, y = self:screenCoords(gameX, gameY)
-		util.drawRectangle("line", x, y, 16, 16, conf.WHITE)
+		util.drawRectangle("line", x, y, 16, 16, color)
 	end
 end
 
@@ -440,15 +475,21 @@ function GamePanel:drawUnit(unit)
 	end
 end
 
-function GamePanel:drawUnitIndicators(unit, withHealthBar)
+function GamePanel:drawUnitIndicators(unit, isSelected, isHovered, isTargeted)
 	local x, y = self:screenCoords(unit.gameX, unit.gameY)
+	local showHealthBar = isSelected or isHovered
+	local damage = 0
 
-	if withHealthBar then
-		drawHealthbar(x + (conf.SPRITE_SIZE / 2), y - 3, unit.health, unit.kind.maxHealth, true)
+	if isTargeted then
+		damage = self.game:getActionDamage()
+	end
+
+	if showHealthBar then
+		drawHealthbar(x + (conf.SPRITE_SIZE / 2), y - 3, unit.health, unit.kind.maxHealth, true, nil, damage)
 	end
 
 	if self.game:isPendingUnit(unit) then
-		self.engine.sprites:draw(18, x, y - conf.SPRITE_SIZE - (withHealthBar and 9 or 0) - 3)
+		self.engine.sprites:draw(18, x, y - conf.SPRITE_SIZE - (showHealthBar and 9 or 0) - 3)
 	end
 end
 

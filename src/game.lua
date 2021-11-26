@@ -220,6 +220,39 @@ function Game:isHitting()
 	return self.action == game.ACTION.HIT
 end
 
+function Game:getActionDamage()
+	if not self.selectedUnit then
+		return 0
+	end
+
+	if self:isShooting() then
+		return self.selectedUnit.kind.shotDamage
+	elseif self:isHitting() then
+		return self.selectedUnit.kind.combatDamage
+	end
+end
+
+function Game:canTarget(x, y)
+	if not self.selectedUnit then
+		return false
+	end
+
+	if self:isMoving() then
+		return self:canMove(self.selectedUnit, x, y)
+	end
+
+	local target = self:getUnitAt(x, y)
+	if not target or not target.kind.isEnemy then
+		return false
+	end
+
+	if self:isShooting() then
+		return self:canShoot(self.selectedUnit, target)
+	elseif self:isHitting() then
+		return self:canHit(self.selectedUnit, target)
+	end
+end
+
 function Game:allowedActions(unit)
 	if self:isMoving() then
 		return self:allowedMovements(unit)
