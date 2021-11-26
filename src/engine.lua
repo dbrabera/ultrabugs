@@ -26,9 +26,6 @@ function Engine:load()
 	self.regular = love.graphics.newFont("assets/GravityRegular5.ttf", 5)
 	self.bold = love.graphics.newFont("assets/GravityBold8.ttf", 8)
 
-	self.cursorSprites = sprite.newSpriteAtlas("assets/cursors.png", conf.SPRITE_SIZE * 2)
-	self.cursor = love.mouse.newCursor(self.cursorSprites:imageData(1, 2))
-
 	love.mouse.setCursor(self.cursor)
 end
 

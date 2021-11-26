@@ -7,27 +7,40 @@
       name="viewport"
       content="width=device-width, initial-scale=1, shrink-to-fit=no, minimum-scale=1, maximum-scale=1"
     />
-    <title>Ultrabugs</title>
+    <title>UltraBugs</title>
+
     <style>
       body {
         background: black;
       }
 
       #canvas {
-        width: 1280;
-        height: 720;
+        display: none;
       }
     </style>
   </head>
   <body>
     <center>
       <div>
-        <div class="loader">Loading...</div>
+        <canvas id="loadingCanvas" oncontextmenu="event.preventDefault()" width="960" height="540"></canvas>
         <canvas id="canvas" oncontextmenu="event.preventDefault()"></canvas>
       </div>
     </center>
 
     <script type="text/javascript">
+      var loadingContext = document.getElementById("loadingCanvas").getContext("2d");
+      function drawLoadingText(text) {
+        var canvas = loadingContext.canvas;
+
+        loadingContext.fillStyle = "rgb(0, 0, 0)";
+        loadingContext.fillRect(0, 0, canvas.scrollWidth, canvas.scrollHeight);
+
+        loadingContext.font = "2em arial";
+        loadingContext.textAlign = "center";
+        loadingContext.fillStyle = "rgb(255, 255, 255)";
+        loadingContext.fillText(text, canvas.scrollWidth / 2, canvas.scrollHeight / 2);
+      }
+
       window.onload = function () {
         window.focus();
       };
@@ -68,7 +81,12 @@
           return canvas;
         })(),
         setStatus: function (text) {
-          console.log(text);
+          if (text) {
+            drawLoadingText(text);
+          } else if (Module.remainingDependencies === 0) {
+            document.getElementById("loadingCanvas").style.display = "none";
+            document.getElementById("canvas").style.display = "block";
+          }
         },
         totalDependencies: 0,
         remainingDependencies: 0,
@@ -82,9 +100,7 @@
           );
         },
       };
-
       Module.setStatus("Downloading...");
-
       window.onerror = function (event) {
         // TODO: do not warn on ok events like simulating an infinite loop or exitStatus
         Module.setStatus("Exception thrown, see JavaScript console");

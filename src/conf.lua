@@ -4,7 +4,7 @@ conf.GRID_SIZE = 10
 conf.SPRITE_SIZE = 16
 conf.SCREEN_WIDTH = 320
 conf.SCREEN_HEIGHT = 180
-conf.SCALE = 4
+conf.SCALE = 3
 
 conf.BLACK = { 0, 0, 0 }
 conf.DARK_GREY = { 34, 32, 52 }
