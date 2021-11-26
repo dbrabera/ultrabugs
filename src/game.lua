@@ -293,8 +293,7 @@ function Game:allowedHits(unit)
 		{ 1, 0 },
 	}) do
 		local x, y = unit.gameX + pos[1], unit.gameY + pos[2]
-
-		if self:getUnitAt(x, y) then
+		if self:isWalkable(x, y) then
 			table.insert(res, { x = x, y = y })
 		end
 	end
