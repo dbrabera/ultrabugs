@@ -1,7 +1,8 @@
 local conf = require("conf")
 local game = require("game")
-local util = require("util")
 local levels = require("levels")
+local tiles = require("tiles")
+local util = require("util")
 
 local screens = {}
 
@@ -114,7 +115,9 @@ function screens.newGameScreen(engine)
 	self.level = 1
 	self.turnCount = 0
 	self.killCount = 0
-	self.game = game.newGame(self.level, 80, 10)
+
+	self.game = game.newGame(self.level)
+	self.gamePanel = screens.newGamePanel(engine, self.game, 80, 10)
 
 	self.moveBtn = screens.newSpriteButton(engine, 37, "1", 8, 150, function()
 		self.game:selectAction(game.ACTION.MOVE)
@@ -133,12 +136,8 @@ function GameScreen:keypressed(key)
 	self.game:keypressed(key)
 end
 
-function GameScreen:mousemoved(x, y)
-	self.game:mousemoved(x, y)
-end
-
 function GameScreen:mousepressed(x, y, button)
-	self.game:mousepressed(x, y, button)
+	self.gamePanel:mousepressed(x, y, button)
 	self.moveBtn:mousepressed(x, y, button)
 	self.shootBtn:mousepressed(x, y, button)
 	self.hitBtn:mousepressed(x, y, button)
@@ -160,8 +159,27 @@ function GameScreen:update(dt)
 			self.engine:push(screens.newVictoryScreen(self.engine, self.level, self.turnCount, self.killCount))
 		else
 			self.level = self.level + 1
-			self.game = game.newGame(self.level, 80, 10, self.game.playerUnits)
+			self.game = game.newGame(self.level, self.game.playerUnits)
+			self.gamePanel.game = self.game
 		end
+	end
+end
+
+local function drawHealthbar(x, y, health, maxHealth, centered, borderColor)
+	borderColor = borderColor or conf.WHITE
+	local w = 4 * maxHealth + 1 - (1 * (maxHealth - 1))
+
+	if centered then
+		x = x - (w / 2)
+	end
+
+	util.drawRectangle("fill", x, y - 8, 4 * health, 5, conf.BLACK)
+	util.drawRectangle("line", x, y - 8, w, 5, borderColor)
+
+	for i = 1, health do
+		local xi, yi = x + 3 * (i - 1) + 1, y - 7
+		util.drawRectangle("fill", xi, yi, 3, 3, conf.LIME)
+		util.drawRectangle("line", xi, yi, 3, 3, conf.BLACK)
 	end
 end
 
@@ -174,7 +192,6 @@ end
 local START_FADE_DELAY_SECONDS = 0.5
 
 function GameScreen:draw()
-	local hoveredUnit = self.game:getUnitAt(self.game.cursorGameX, self.game.cursorGameY)
 	local padding = 8
 
 	for i, unit in ipairs(self.game.playerUnits) do
@@ -184,26 +201,27 @@ function GameScreen:draw()
 		local color = self.game.selectedUnit == unit and conf.WHITE or conf.GREY
 		util.drawRectangle("line", x, y, conf.SPRITE_SIZE, conf.SPRITE_SIZE, color)
 
-		game.drawHealthbar(x + 18, y + 8, unit.health, unit.kind.maxHealth, false, color)
+		drawHealthbar(x + 18, y + 8, unit.health, unit.kind.maxHealth, false, color)
 	end
 
-	if hoveredUnit and hoveredUnit.kind.isEnemy then
+	local hoveredUnit = self.gamePanel:getHoveredUnit()
+	if self.game.state == game.STATE.PLAYER_TURN and hoveredUnit and hoveredUnit.kind.isEnemy then
 		local x, y = 250, 150
 
 		self.engine.sprites:draw(hoveredUnit.kind.spriteID, x, y)
 		util.drawRectangle("line", x, y, conf.SPRITE_SIZE, conf.SPRITE_SIZE, conf.GREY)
-		game.drawHealthbar(x + 18, y + 8, hoveredUnit.health, hoveredUnit.kind.maxHealth, false, conf.GREY)
+		drawHealthbar(x + 18, y + 8, hoveredUnit.health, hoveredUnit.kind.maxHealth, false, conf.GREY)
 		util.drawText(hoveredUnit.kind.name, self.engine.regular, conf.GREY, x + 18, y + 8)
 	end
 
-	self.game:draw(self.engine.sprites)
+	self.gamePanel:draw()
 
 	if self.game.selectedUnit then
 		local unit = self.game.selectedUnit
 
 		self.engine.sprites:draw(unit.kind.spriteID, padding, 130)
 		util.drawRectangle("line", padding, 130, conf.SPRITE_SIZE, conf.SPRITE_SIZE, conf.WHITE)
-		game.drawHealthbar(padding + 18, 130 + 8, unit.health, unit.kind.maxHealth, false, conf.WHITE)
+		drawHealthbar(padding + 18, 130 + 8, unit.health, unit.kind.maxHealth, false, conf.WHITE)
 		util.drawText(unit.kind.name, self.engine.regular, conf.WHITE, padding + 18, 130 + 8)
 
 		self.moveBtn:draw(self.game:isMoving(), self.game.selectedUnit.hasMoved)
@@ -252,6 +270,186 @@ function GameScreen:drawMessage(msg)
 	util.drawRectangle("fill", 0, y, conf.SCREEN_WIDTH, height, conf.BLACK)
 	util.drawRectangle("line", padding, y + padding, conf.SCREEN_WIDTH - padding * 2, height - padding * 2, conf.WHITE)
 	util.drawText(msg, self.engine.bold, conf.WHITE, centerX, y + 11, util.ALING.CENTER)
+end
+
+local GamePanel = {}
+
+function screens.newGamePanel(engine, game, x, y)
+	local self = {}
+	setmetatable(self, { __index = GamePanel })
+
+	self.engine = engine
+	self.game = game
+	self.x = x
+	self.y = y
+
+	return self
+end
+
+function GamePanel:mousepressed(x, y, button)
+	if not self:isInbounds(x, y) then
+		return
+	end
+
+	local gameX, gameY = self:gameCoords(x, y)
+	self.game:mousepressed(gameX, gameY, button)
+end
+
+function GamePanel:isInbounds(x, y)
+	local size = conf.GRID_SIZE * conf.SPRITE_SIZE
+	return self.x <= x and x < self.x + size and self.y <= y and self.y + size
+end
+
+function GamePanel:screenCoords(gameX, gameY)
+	return self.x + gameX * conf.SPRITE_SIZE, self.y + gameY * conf.SPRITE_SIZE
+end
+
+function GamePanel:gameCoords(x, y)
+	local gameX = math.floor((x - self.x) / conf.SPRITE_SIZE)
+	local gameY = math.floor((y - self.y) / conf.SPRITE_SIZE)
+	return gameX, gameY
+end
+
+function GamePanel:getHoveredUnit()
+	local gameX, gameY = self:getGameCursorPosition()
+	return self.game:getUnitAt(gameX, gameY)
+end
+
+function GamePanel:getPlayableUnit()
+	if self.game.selectedUnit then
+		return self.game.selectedUnit
+	end
+
+	local hoveredUnit = self:getHoveredUnit()
+	if hoveredUnit and not hoveredUnit.kind.isEnemy then
+		return hoveredUnit
+	end
+
+	return nil
+end
+
+function GamePanel:getGameCursorPosition()
+	local x, y = love.mouse.getPosition()
+	x, y = util.scaledCoords(x, y, conf.SCALE)
+	return self:gameCoords(x, y)
+end
+
+function GamePanel:draw()
+	self:drawGrid()
+
+	if self.game.state == game.STATE.PLAYER_TURN then
+		self:drawPlayableTiles()
+		self:drawCursor()
+
+		if self.game.selectedUnit then
+			local x, y = self:screenCoords(self.game.selectedUnit.gameX, self.game.selectedUnit.gameY)
+			util.drawRectangle("line", x, y, 16, 16, conf.LIME)
+		end
+	end
+
+	-- draw the shadows before the units to ensure that they are below them
+	for _, unit in ipairs(self.game.playerUnits) do
+		self:drawUnitShadow(unit)
+	end
+
+	for _, unit in ipairs(self.game.enemyUnits) do
+		self:drawUnitShadow(unit)
+	end
+
+	for _, unit in ipairs(self.game.playerUnits) do
+		self:drawUnit(unit)
+	end
+
+	for _, unit in ipairs(self.game.enemyUnits) do
+		self:drawUnit(unit)
+	end
+
+	if self.game.state == game.STATE.PLAYER_TURN then
+		-- draw the indicators after the units to ensure that the overlap
+
+		local hoveredUnit = self:getHoveredUnit()
+
+		for _, unit in ipairs(self.game.playerUnits) do
+			self:drawUnitIndicators(unit, unit == self.selectedUnit or unit == hoveredUnit)
+		end
+
+		for _, unit in ipairs(self.game.enemyUnits) do
+			self:drawUnitIndicators(unit, unit == self.selectedUnit or unit == hoveredUnit)
+		end
+	end
+end
+
+function GamePanel:drawGrid()
+	for i = 0, conf.GRID_SIZE - 1 do
+		for j = 0, conf.GRID_SIZE - 1 do
+			local t = tiles.KIND[self.game.map[j + 1][i + 1]]
+			self.engine.sprites:draw(t.spriteID, self.x + i * conf.SPRITE_SIZE, self.y + j * conf.SPRITE_SIZE)
+		end
+	end
+end
+
+function GamePanel:drawPlayableTiles()
+	local playableUnit = self:getPlayableUnit()
+
+	if not playableUnit then
+		return
+	end
+
+	for _, pos in ipairs(self.game:allowedActions(playableUnit)) do
+		local x, y = self:screenCoords(pos.x, pos.y)
+
+		local color = conf.LIME
+		if self.game.action == game.ACTION.SHOOT then
+			color = conf.YELLOW
+		elseif self.game.action == game.ACTION.HIT then
+			color = conf.RED
+		end
+
+		util.drawRectangle("fill", x, y, 16, 16, color, 0.4)
+	end
+end
+
+function GamePanel:drawCursor()
+	local gameX, gameY = self:getGameCursorPosition()
+
+	if self.game:isInbounds(gameX, gameY) then
+		local x, y = self:screenCoords(gameX, gameY)
+		util.drawRectangle("line", x, y, 16, 16, conf.WHITE)
+	end
+end
+
+function GamePanel:drawUnitShadow(unit)
+	if not unit:isAlive() then
+		return
+	end
+
+	local x, y = self:screenCoords(unit.gameX, unit.gameY)
+	self.engine.sprites:draw(17, x, y)
+end
+
+function GamePanel:drawUnit(unit)
+	if not unit:isAlive() then
+		return
+	end
+
+	local x, y = self:screenCoords(unit.gameX, unit.gameY)
+	self.engine.sprites:draw(unit.kind.spriteID, x, y - 3)
+
+	if unit.kind.isEnemy then
+		return
+	end
+end
+
+function GamePanel:drawUnitIndicators(unit, withHealthBar)
+	local x, y = self:screenCoords(unit.gameX, unit.gameY)
+
+	if withHealthBar then
+		drawHealthbar(x + (conf.SPRITE_SIZE / 2), y - 3, unit.health, unit.kind.maxHealth, true)
+	end
+
+	if self.game:isPendingUnit(unit) then
+		self.engine.sprites:draw(18, x, y - conf.SPRITE_SIZE - (withHealthBar and 9 or 0) - 3)
+	end
 end
 
 local SpriteButton = {}
