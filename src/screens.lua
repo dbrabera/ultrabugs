@@ -119,14 +119,18 @@ function screens.newGameScreen(engine)
 	self.game = game.newGame(self.level)
 	self.gamePanel = screens.newGamePanel(engine, self.game, 80, 10)
 
-	self.moveBtn = screens.newSpriteButton(engine, 37, "1", 8, 150, function()
+	self.moveBtn = screens.newSpriteButton(engine, 37, "1", 8, 120, function()
 		self.game:selectAction(game.ACTION.MOVE)
 	end)
-	self.shootBtn = screens.newSpriteButton(engine, 45, "2", 8 + conf.SPRITE_SIZE, 150, function()
+	self.shootBtn = screens.newSpriteButton(engine, 45, "2", 8 + conf.SPRITE_SIZE, 120, function()
 		self.game:selectAction(game.ACTION.SHOOT)
 	end)
-	self.hitBtn = screens.newSpriteButton(engine, 53, "3", 8 + conf.SPRITE_SIZE * 2, 150, function()
+	self.hitBtn = screens.newSpriteButton(engine, 53, "3", 8 + conf.SPRITE_SIZE * 2, 120, function()
 		self.game:selectAction(game.ACTION.HIT)
+	end)
+
+	self.turnBtn = screens.newLabelButton(engine, "End turn", 8, 150, function()
+		self.game:endPlayerTurn()
 	end)
 
 	return self
@@ -141,6 +145,7 @@ function GameScreen:mousepressed(x, y, button)
 	self.moveBtn:mousepressed(x, y, button)
 	self.shootBtn:mousepressed(x, y, button)
 	self.hitBtn:mousepressed(x, y, button)
+	self.turnBtn:mousepressed(x, y, button)
 end
 
 function GameScreen:update(dt)
@@ -225,16 +230,19 @@ function GameScreen:draw()
 
 	if self.game.selectedUnit then
 		local unit = self.game.selectedUnit
+		local y = 100
 
-		self.engine.sprites:draw(unit.kind.spriteID, padding, 130)
-		util.drawRectangle("line", padding, 130, conf.SPRITE_SIZE, conf.SPRITE_SIZE, conf.WHITE)
-		drawHealthbar(padding + 18, 130 + 8, unit.health, unit.kind.maxHealth, false, conf.WHITE)
-		util.drawText(unit.kind.name, self.engine.regular, conf.WHITE, padding + 18, 130 + 8)
+		self.engine.sprites:draw(unit.kind.spriteID, padding, y)
+		util.drawRectangle("line", padding, y, conf.SPRITE_SIZE, conf.SPRITE_SIZE, conf.WHITE)
+		drawHealthbar(padding + 18, y + 8, unit.health, unit.kind.maxHealth, false, conf.WHITE)
+		util.drawText(unit.kind.name, self.engine.regular, conf.WHITE, padding + 18, y + 8)
 
 		self.moveBtn:draw(self.game:isMoving(), self.game.selectedUnit.hasMoved)
 		self.shootBtn:draw(self.game:isShooting(), self.game.selectedUnit.hasShot)
 		self.hitBtn:draw(self.game:isHitting(), self.game.selectedUnit.hasHit)
 	end
+
+	self.turnBtn:draw(self.game.state ~= game.STATE.PLAYER_TURN)
 
 	util.drawText("Level " .. self.level, self.engine.regular, conf.WHITE, 260, 10)
 	love.graphics.draw(self.engine.minimap, 270, 24)
@@ -392,7 +400,6 @@ function GamePanel:draw()
 
 	if self.game.state == game.STATE.PLAYER_TURN then
 		-- draw the indicators after the units to ensure that the overlap
-
 		local hoveredUnit = self:getHoveredUnit()
 
 		for _, unit in ipairs(self.game.playerUnits) do
@@ -509,19 +516,18 @@ function screens.newSpriteButton(engine, spriteID, caption, x, y, func)
 	self.caption = caption
 	self.x = x
 	self.y = y
+	self.w = conf.SPRITE_SIZE
+	self.h = conf.SPRITE_SIZE
 	self.func = func
 
 	return self
 end
 
+--- Checks whether the button is being hovered.
 function SpriteButton:isHovered()
 	local mx, my = love.mouse.getPosition()
 	mx, my = util.scaledCoords(mx, my, conf.SCALE)
-	return self:isOver(mx, my)
-end
-
-function SpriteButton:isOver(x, y)
-	return self.x <= x and x <= self.x + conf.SPRITE_SIZE and self.y <= y and y <= self.y + conf.SPRITE_SIZE
+	return util.isInRect(self.x, self.y, self.w, self.h, mx, my)
 end
 
 function SpriteButton:mousepressed(x, y, button)
@@ -529,7 +535,7 @@ function SpriteButton:mousepressed(x, y, button)
 		return
 	end
 
-	if self:isOver(x, y) then
+	if util.isInRect(self.x, self.y, self.w, self.h, x, y) then
 		self.func()
 	end
 end
@@ -556,6 +562,62 @@ function SpriteButton:draw(selected, disabled)
 		color,
 		self.x + conf.SPRITE_SIZE / 2,
 		self.y + 17,
+		util.ALING.CENTER
+	)
+end
+
+local LabelButton = {}
+
+function screens.newLabelButton(engine, label, x, y, func)
+	local self = {}
+	setmetatable(self, { __index = LabelButton })
+
+	self.engine = engine
+	self.label = label
+	self.x = x
+	self.y = y
+	self.w = conf.SPRITE_SIZE * 4
+	self.h = conf.SPRITE_SIZE
+	self.func = func
+
+	return self
+end
+
+--- Checks whether the button is being hovered.
+function LabelButton:isHovered()
+	local mx, my = love.mouse.getPosition()
+	mx, my = util.scaledCoords(mx, my, conf.SCALE)
+	return util.isInRect(self.x, self.y, self.w, self.h, mx, my)
+end
+
+function LabelButton:mousepressed(x, y, button)
+	if button ~= 1 then
+		return
+	end
+
+	if util.isInRect(self.x, self.y, self.w, self.h, x, y) then
+		self.func()
+	end
+end
+
+function LabelButton:draw(disabled)
+	local shift = 0
+	local color = conf.GREY
+	if self:isHovered() and not disabled then
+		shift = 8
+		color = conf.LIGHT_BLUE
+	end
+
+	self.engine.sprites:draw(22 + shift, self.x, self.y)
+	self.engine.sprites:draw(23 + shift, self.x + conf.SPRITE_SIZE, self.y)
+	self.engine.sprites:draw(23 + shift, self.x + conf.SPRITE_SIZE * 2, self.y)
+	self.engine.sprites:draw(24 + shift, self.x + conf.SPRITE_SIZE * 3, self.y)
+	util.drawText(
+		self.label,
+		self.engine.regular,
+		color,
+		self.x + conf.SPRITE_SIZE * 4 / 2,
+		self.y + 5,
 		util.ALING.CENTER
 	)
 end
