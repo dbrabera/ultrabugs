@@ -9,6 +9,7 @@ conf.SCALE = 3
 conf.BLACK = { 0, 0, 0 }
 conf.DARK_GREY = { 34, 32, 52 }
 conf.GREY = { 105, 106, 106 }
+conf.BLUE = { 99, 155, 255 }
 conf.LIGHT_BLUE = { 203, 219, 252 }
 conf.LIME = { 153, 229, 80 }
 conf.RED = { 172, 50, 50 }

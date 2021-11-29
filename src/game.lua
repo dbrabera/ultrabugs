@@ -372,30 +372,41 @@ function Game:isWalkable(x, y)
 	return self:isInbounds(x, y) and tiles.KIND[self.map[y + 1][x + 1]].walkable
 end
 
+--- Checks whether there is no units on the position.
 function Game:isEmpty(x, y)
 	return not self:getUnitAt(x, y)
 end
 
---- Checks whether a tile is solid and blocks the line of sight.
+--- Checks whether a position is solid and blocks the line of sight.
 function Game:isSolid(x, y)
 	return not self:isInbounds(x, y) or tiles.KIND[self.map[y + 1][x + 1]].solid
 end
 
+--- Checks wether the unit has any pending actions in the current turn.
 function Game:isPendingUnit(unit)
-	if self.state ~= game.STATE.PLAYER_TURN or unit.kind.isEnemy or not unit:isAlive() then
+	if not unit:isAlive() then
 		return false
 	end
-	return not unit.hasMoved
+
+	if
+		(unit:isEnemy() and self.state ~= game.STATE.ENEMY_TURN)
+		or (unit:isPlayer() and self.state ~= game.STATE.PLAYER_TURN)
+	then
+		return false
+	end
+
+	return not (unit.hasMoved and unit.hasShot and unit.hasHit)
 end
 
-function Game:getUnitAt(gameX, gameY)
+--- Gets the unit at the position. If there is no unit it returns nil.
+function Game:getUnitAt(x, y)
 	for _, unit in ipairs(self.playerUnits) do
-		if unit:isAlive() and unit.gameX == gameX and unit.gameY == gameY then
+		if unit:isAlive() and unit.gameX == x and unit.gameY == y then
 			return unit
 		end
 	end
 	for _, unit in ipairs(self.enemyUnits) do
-		if unit:isAlive() and unit.gameX == gameX and unit.gameY == gameY then
+		if unit:isAlive() and unit.gameX == x and unit.gameY == y then
 			return unit
 		end
 	end

@@ -105,12 +105,23 @@ function Unit:isInShotRange(x, y)
 	return math.abs(x - self.gameX) <= self.kind.maxShotRange and math.abs(y - self.gameY) <= self.kind.maxShotRange
 end
 
+--- Checks whether the unit is alive.
 function Unit:isAlive()
 	return self.health > 0
 end
 
 function Unit:hasRangedAttack()
 	return self.kind.maxShotRange >= 2
+end
+
+--- Checks whetherthe unit belongs to the enemy.
+function Unit:isEnemy()
+	return self.kind.isEnemy
+end
+
+--- Checks wether the unit belongs to the player.
+function Unit:isPlayer()
+	return not self.kind.isEnemy
 end
 
 return unit

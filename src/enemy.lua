@@ -22,14 +22,9 @@ function Enemy:takeTurn(dt)
 	return true
 end
 
---- Checks whether the unit as any pending actions in the turn.
-function Enemy:isPendingUnit(unit)
-	return unit:isAlive() and not (unit.hasMoved and unit.hasShot and unit.hasHit)
-end
-
 --- Uses the unit to do an action. It returns a boolean indicating whether any action was done or the unit was skipped.
 function Enemy:doUnitAction(unit)
-	if not self:isPendingUnit(unit) then
+	if not self.game:isPendingUnit(unit) then
 		return false
 	end
 

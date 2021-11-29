@@ -429,7 +429,7 @@ function GamePanel:drawPlayableTiles()
 		if self.game.action == game.ACTION.SHOOT then
 			color = conf.YELLOW
 		elseif self.game.action == game.ACTION.HIT then
-			color = conf.RED
+			color = conf.BLUE
 		end
 
 		util.drawRectangle("fill", x, y, 16, 16, color, 0.4)
@@ -488,8 +488,13 @@ function GamePanel:drawUnitIndicators(unit, isSelected, isHovered, isTargeted)
 		drawHealthbar(x + (conf.SPRITE_SIZE / 2), y - 3, unit.health, unit.kind.maxHealth, true, nil, damage)
 	end
 
+	if not unit:isPlayer() then
+		return
+	end
+
 	if self.game:isPendingUnit(unit) then
-		self.engine.sprites:draw(18, x, y - conf.SPRITE_SIZE - (showHealthBar and 9 or 0) - 3)
+		local spriteID = unit.hasMoved and 20 or 19
+		self.engine.sprites:draw(spriteID, x, y - conf.SPRITE_SIZE - (showHealthBar and 9 or 0) - 3)
 	end
 end
 
