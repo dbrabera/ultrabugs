@@ -14,13 +14,13 @@ function screens.newMainScreen(engine)
 	setmetatable(self, { __index = MainScreen })
 
 	self.engine = engine
-	self.since = 0
+	self.age = 0
 
 	return self
 end
 
 function MainScreen:update(dt)
-	self.since = self.since + dt
+	self.age = self.age + dt
 end
 
 function MainScreen:keypressed(key)
@@ -31,17 +31,20 @@ end
 
 function MainScreen:draw()
 	love.graphics.setColor(conf.WHITE)
-	love.graphics.draw(self.engine.title, 0, 0)
+	love.graphics.draw(self.engine.titleBg, 0, 0)
 
 	local x, _ = util.screenCenter()
 	util.drawText("A GAME BY", self.engine.regular, conf.GREY, x, 95, util.ALING.CENTER)
 	util.drawText("DIEGO BARBERA", self.engine.regular, conf.GREY, x, 105, util.ALING.CENTER)
 
-	local color = conf.WHITE
-	if math.floor(self.since * 2 % 2) == 0 then
-		color = conf.GREY
-	end
-	util.drawText("< Press space to start >", self.engine.bold, color, x, 125, util.ALING.CENTER)
+	util.drawText(
+		"< Press space to start >",
+		self.engine.bold,
+		util.flash(self.age, conf.WHITE, conf.GREY),
+		x,
+		125,
+		util.ALING.CENTER
+	)
 end
 
 --- Shows a mission description.
@@ -52,13 +55,13 @@ function screens.newMissionScreen(engine)
 	setmetatable(self, { __index = MissionScreen })
 
 	self.engine = engine
-	self.since = 0
+	self.age = 0
 
 	return self
 end
 
 function MissionScreen:update(dt)
-	self.since = self.since + dt
+	self.age = self.age + dt
 end
 
 function MissionScreen:keypressed(key)
@@ -70,18 +73,21 @@ end
 
 function MissionScreen:draw()
 	love.graphics.setColor(conf.WHITE)
-	love.graphics.draw(self.engine.mission, 0, 0)
+	love.graphics.draw(self.engine.missionBg, 0, 0)
 
 	local x, _ = util.screenCenter()
 
 	util.drawText("Enter the colony and defeat", self.engine.bold, conf.WHITE, x, 95, util.ALING.CENTER)
 	util.drawText("the queen at level seven.", self.engine.bold, conf.WHITE, x, 115, util.ALING.CENTER)
 
-	local color = conf.WHITE
-	if math.floor(self.since * 2 % 2) == 0 then
-		color = conf.GREY
-	end
-	util.drawText("< Press space to continue >", self.engine.bold, color, x, 140, util.ALING.CENTER)
+	util.drawText(
+		"< Press space to continue >",
+		self.engine.bold,
+		util.flash(self.age, conf.WHITE, conf.GREY),
+		x,
+		140,
+		util.ALING.CENTER
+	)
 end
 
 --- Shows the states after losing the game.
@@ -91,12 +97,17 @@ function screens.newGameOverScreen(engine, level, turnCount, killCount)
 	local self = {}
 	setmetatable(self, { __index = GameOverScreen })
 
+	self.age = 0
 	self.engine = engine
 	self.level = level
 	self.turnCount = turnCount
 	self.killCount = killCount
 
 	return self
+end
+
+function GameOverScreen:update(dt)
+	self.age = self.age + dt
 end
 
 function GameOverScreen:keypressed(key)
@@ -107,6 +118,9 @@ function GameOverScreen:keypressed(key)
 end
 
 function GameOverScreen:draw()
+	love.graphics.setColor(conf.WHITE)
+	love.graphics.draw(self.engine.spaceBg, 0, 0)
+
 	local x, _ = util.screenCenter()
 
 	util.drawText("Your squad has died", self.engine.bold, conf.WHITE, x, 55, util.ALING.CENTER)
@@ -120,7 +134,14 @@ function GameOverScreen:draw()
 	util.drawText("Bugs killed", self.engine.regular, conf.WHITE, 106, 95)
 	util.drawText(self.killCount, self.engine.regular, conf.WHITE, 175, 95)
 
-	util.drawText("< Press space to try again >", self.engine.bold, conf.WHITE, x, 115, util.ALING.CENTER)
+	util.drawText(
+		"< Press space to try again >",
+		self.engine.bold,
+		util.flash(self.age, conf.WHITE, conf.GREY),
+		x,
+		115,
+		util.ALING.CENTER
+	)
 end
 
 --- Shows the stats after wining the game.
@@ -130,12 +151,17 @@ function screens.newVictoryScreen(engine, level, turnCount, killCount)
 	local self = {}
 	setmetatable(self, { __index = VictoryScreen })
 
+	self.age = 0
 	self.engine = engine
 	self.level = level
 	self.turnCount = turnCount
 	self.killCount = killCount
 
 	return self
+end
+
+function VictoryScreen:update(dt)
+	self.age = self.age + dt
 end
 
 function VictoryScreen:keypressed(key)
@@ -145,6 +171,9 @@ function VictoryScreen:keypressed(key)
 end
 
 function VictoryScreen:draw()
+	love.graphics.setColor(conf.WHITE)
+	love.graphics.draw(self.engine.spaceBg, 0, 0)
+
 	local x, _ = util.screenCenter()
 
 	util.drawText("Victory", self.engine.bold, conf.WHITE, x, 50, util.ALING.CENTER)
@@ -156,7 +185,14 @@ function VictoryScreen:draw()
 	util.drawText("Bugs killed", self.engine.regular, conf.WHITE, 106, 95)
 	util.drawText(self.killCount, self.engine.regular, conf.WHITE, 175, 95)
 
-	util.drawText("< Press space to quit >", self.engine.bold, conf.WHITE, x, 115, util.ALING.CENTER)
+	util.drawText(
+		"< Press space to quit >",
+		self.engine.bold,
+		util.flash(self.age, conf.WHITE, conf.GREY),
+		x,
+		115,
+		util.ALING.CENTER
+	)
 end
 
 --- Shows the board and HUD for a given game run.

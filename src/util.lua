@@ -191,4 +191,12 @@ function util.isInRect(x1, y1, w, h, x2, y2)
 	return x1 <= x2 and x2 <= x1 + w and y1 <= y2 and y2 <= y1 + h
 end
 
+--- Flashes two colors over time according to the current age in seconds.
+function util.flash(age, a, b)
+	if math.floor(age * 2 % 2) == 0 then
+		return a
+	end
+	return b
+end
+
 return util

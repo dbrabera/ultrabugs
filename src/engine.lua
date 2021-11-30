@@ -21,8 +21,9 @@ function Engine:load()
 	love.graphics.setDefaultFilter("nearest")
 
 	self.minimap = love.graphics.newImage("assets/minimap.png")
-	self.title = love.graphics.newImage("assets/title.png")
-	self.mission = love.graphics.newImage("assets/mission.png")
+	self.titleBg = love.graphics.newImage("assets/title.png")
+	self.missionBg = love.graphics.newImage("assets/mission.png")
+	self.spaceBg = love.graphics.newImage("assets/space.png")
 
 	self.regular = love.graphics.newFont("assets/GravityRegular5.ttf", 5)
 	self.bold = love.graphics.newFont("assets/GravityBold8.ttf", 8)
