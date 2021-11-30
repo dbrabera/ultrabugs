@@ -1,10 +1,17 @@
 local conf = {}
 
+--- Size of the grid in cells
 conf.GRID_SIZE = 10
+--- Size of the sprites in pixels
 conf.SPRITE_SIZE = 16
+--- Width of the screen
 conf.SCREEN_WIDTH = 320
+--- Height of the screen
 conf.SCREEN_HEIGHT = 180
+--- Scale to zoom in the screen
 conf.SCALE = 3
+--- Duration of the animations in seconds.
+conf.ANIMATION_DURATION_SECONDS = 0.5
 
 conf.BLACK = { 0, 0, 0 }
 conf.DARK_GREY = { 34, 32, 52 }

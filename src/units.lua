@@ -41,7 +41,20 @@ function unit.newUnit(kind, gameX, gameY)
 	self.hasShot = false
 	self.hasHit = false
 
+	self.lastDamage = 0
+	self.lastDamageAge = 0
+
+	self.deathAge = 0
+
 	return self
+end
+
+function Unit:update(dt)
+	self.lastDamageAge = self.lastDamageAge + dt
+
+	if not self:isAlive() then
+		self.deathAge = self.deathAge + dt
+	end
 end
 
 function Unit:skipTurn()
@@ -83,6 +96,9 @@ function Unit:takeDamage(damage)
 	else
 		self.health = self.health - damage
 	end
+
+	self.lastDamage = damage
+	self.lastDamageAge = 0
 end
 
 function Unit:isAdversary(other)

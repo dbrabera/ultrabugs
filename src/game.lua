@@ -156,6 +156,14 @@ end
 function Game:update(dt)
 	self.stateSince = self.stateSince + dt
 
+	for _, unit in ipairs(self.playerUnits) do
+		unit:update(dt)
+	end
+
+	for _, unit in ipairs(self.enemyUnits) do
+		unit:update(dt)
+	end
+
 	if self.state == game.STATE.START_TRANSITION then
 		if self.stateSince >= TRANSITION_DELAY_SECONDS then
 			self:advaceState(game.STATE.PLAYER_TURN)

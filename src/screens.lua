@@ -468,6 +468,7 @@ function GamePanel:draw()
 	end
 end
 
+--- Draws the game grid.
 function GamePanel:drawGrid()
 	for i = 0, conf.GRID_SIZE - 1 do
 		for j = 0, conf.GRID_SIZE - 1 do
@@ -477,6 +478,7 @@ function GamePanel:drawGrid()
 	end
 end
 
+--- Highlights the tiles that are playable according to the selected action.
 function GamePanel:drawPlayableTiles()
 	local playableUnit = self:getPlayableUnit()
 
@@ -498,6 +500,7 @@ function GamePanel:drawPlayableTiles()
 	end
 end
 
+--- Draws the squared cursor on the board.
 function GamePanel:drawCursor()
 	local gameX, gameY = self:getGameCursorPosition()
 	local target = self.game:getUnitAt(gameX, gameY)
@@ -515,6 +518,7 @@ function GamePanel:drawCursor()
 	end
 end
 
+--- Draws the shadow effect for a unit.
 function GamePanel:drawUnitShadow(unit)
 	if not unit:isAlive() then
 		return
@@ -524,19 +528,26 @@ function GamePanel:drawUnitShadow(unit)
 	self.engine.sprites:draw(17, x, y)
 end
 
+--- Draws a unit in the board, and fades it out when it dies according to the configured animation duration.
 function GamePanel:drawUnit(unit)
-	if not unit:isAlive() then
+	if not unit:isAlive() and unit.deathAge > conf.ANIMATION_DURATION_SECONDS then
 		return
 	end
 
 	local x, y = self:screenCoords(unit.gameX, unit.gameY)
-	self.engine.sprites:draw(unit.kind.spriteID, x, y - 3)
+	self.engine.sprites:draw(
+		unit.kind.spriteID,
+		x,
+		y - 3,
+		(conf.ANIMATION_DURATION_SECONDS - unit.deathAge) / conf.ANIMATION_DURATION_SECONDS
+	)
 
-	if unit.kind.isEnemy then
-		return
+	if unit.lastDamage > 0 then
+		self:drawDamage(unit.lastDamage, unit.lastDamageAge, x, y - 3)
 	end
 end
 
+--- Draws the unit health and action indicators
 function GamePanel:drawUnitIndicators(unit, isSelected, isHovered, isTargeted)
 	local x, y = self:screenCoords(unit.gameX, unit.gameY)
 	local showHealthBar = isSelected or isHovered
@@ -558,6 +569,23 @@ function GamePanel:drawUnitIndicators(unit, isSelected, isHovered, isTargeted)
 		local spriteID = unit.hasMoved and 20 or 19
 		self.engine.sprites:draw(spriteID, x, y - conf.SPRITE_SIZE - (showHealthBar and 9 or 0) - 3)
 	end
+end
+
+--- Sprite IDs to use for the damage animations.
+local DAMAGE_SPRITE_IDS = { 36, 44, 52 }
+
+--- Draws a damage animation that fades in with age according to the configured animation duration.
+function GamePanel:drawDamage(damage, age, x, y)
+	if age > conf.ANIMATION_DURATION_SECONDS then
+		return
+	end
+
+	self.engine.sprites:draw(
+		DAMAGE_SPRITE_IDS[damage],
+		x,
+		y,
+		(conf.ANIMATION_DURATION_SECONDS - age) / conf.ANIMATION_DURATION_SECONDS
+	)
 end
 
 local SpriteButton = {}
