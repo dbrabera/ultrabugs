@@ -90,6 +90,13 @@ function MissionScreen:draw()
 	)
 end
 
+--- Returns the score calculated from the game stats: The deeper and more enemies killed
+-- the higher the score would be, and there is a bonus for finishing each level in less
+-- than 10 turns in average.
+local function score(level, killCount, turnCount)
+	return math.floor(level * 3 + killCount) + math.max(level * 10 - turnCount, 0)
+end
+
 --- Shows the states after losing the game.
 local GameOverScreen = {}
 
@@ -123,23 +130,26 @@ function GameOverScreen:draw()
 
 	local x, _ = util.screenCenter()
 
-	util.drawText("Your squad has died", self.engine.bold, conf.WHITE, x, 55, util.ALING.CENTER)
+	util.drawText("Your squad has died", self.engine.bold, conf.WHITE, x, 50, util.ALING.CENTER)
 
-	util.drawText("Level", self.engine.regular, conf.WHITE, 135, 75)
-	util.drawText(self.level, self.engine.regular, conf.WHITE, 175, 75)
+	util.drawText("Level", self.engine.regular, conf.WHITE, 135, 70)
+	util.drawText(self.level, self.engine.regular, conf.WHITE, 175, 70)
 
-	util.drawText("Turns taken", self.engine.regular, conf.WHITE, 103, 85)
-	util.drawText(self.turnCount, self.engine.regular, conf.WHITE, 175, 85)
+	util.drawText("Turns taken", self.engine.regular, conf.WHITE, 103, 80)
+	util.drawText(self.turnCount, self.engine.regular, conf.WHITE, 175, 80)
 
-	util.drawText("Bugs killed", self.engine.regular, conf.WHITE, 106, 95)
-	util.drawText(self.killCount, self.engine.regular, conf.WHITE, 175, 95)
+	util.drawText("Bugs killed", self.engine.regular, conf.WHITE, 106, 90)
+	util.drawText(self.killCount, self.engine.regular, conf.WHITE, 175, 90)
+
+	util.drawText("Score", self.engine.regular, conf.WHITE, 134, 100)
+	util.drawText(score(self.level, self.killCount, self.turnCount), self.engine.regular, conf.WHITE, 175, 100)
 
 	util.drawText(
 		"< Press space to try again >",
 		self.engine.bold,
 		util.flash(self.age, conf.WHITE, conf.GREY),
 		x,
-		115,
+		120,
 		util.ALING.CENTER
 	)
 end
@@ -176,21 +186,24 @@ function VictoryScreen:draw()
 
 	local x, _ = util.screenCenter()
 
-	util.drawText("Victory", self.engine.bold, conf.WHITE, x, 50, util.ALING.CENTER)
-	util.drawText("Your squad defeated the queen.", self.engine.bold, conf.WHITE, x, 65, util.ALING.CENTER)
+	util.drawText("Victory", self.engine.bold, conf.WHITE, x, 45, util.ALING.CENTER)
+	util.drawText("Your squad defeated the queen.", self.engine.bold, conf.WHITE, x, 60, util.ALING.CENTER)
 
-	util.drawText("Turns taken", self.engine.regular, conf.WHITE, 103, 85)
-	util.drawText(self.turnCount, self.engine.regular, conf.WHITE, 175, 85)
+	util.drawText("Turns taken", self.engine.regular, conf.WHITE, 103, 80)
+	util.drawText(self.turnCount, self.engine.regular, conf.WHITE, 175, 80)
 
-	util.drawText("Bugs killed", self.engine.regular, conf.WHITE, 106, 95)
-	util.drawText(self.killCount, self.engine.regular, conf.WHITE, 175, 95)
+	util.drawText("Bugs killed", self.engine.regular, conf.WHITE, 106, 90)
+	util.drawText(self.killCount, self.engine.regular, conf.WHITE, 175, 90)
+
+	util.drawText("Score", self.engine.regular, conf.WHITE, 134, 100)
+	util.drawText(score(self.level, self.killCount, self.turnCount), self.engine.regular, conf.WHITE, 175, 100)
 
 	util.drawText(
 		"< Press space to quit >",
 		self.engine.bold,
 		util.flash(self.age, conf.WHITE, conf.GREY),
 		x,
-		115,
+		120,
 		util.ALING.CENTER
 	)
 end
