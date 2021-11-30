@@ -445,12 +445,7 @@ function GamePanel:getPlayableUnit()
 		return self.game.selectedUnit
 	end
 
-	local hoveredUnit = self:getHoveredUnit()
-	if hoveredUnit and not hoveredUnit.kind.isEnemy then
-		return hoveredUnit
-	end
-
-	return nil
+	return self:getHoveredUnit()
 end
 
 function GamePanel:getGameCursorPosition()
@@ -522,11 +517,27 @@ function GamePanel:drawPlayableTiles()
 		return
 	end
 
-	for _, pos in ipairs(self.game:allowedActions(playableUnit)) do
+	local actions
+
+	if playableUnit.kind.isEnemy then
+		-- for an enemy unit we display the largest attack range
+		if playableUnit.kind.shotDamage > 0 then
+			actions = self.game:allowedShots(playableUnit)
+		else
+			actions = self.game:allowedHits(playableUnit)
+		end
+	else
+		-- for a player unit we display the selected action range
+		actions = self.game:allowedActions(playableUnit)
+	end
+
+	for _, pos in ipairs(actions) do
 		local x, y = self:screenCoords(pos.x, pos.y)
 
 		local color = conf.LIME
-		if self.game.action == game.ACTION.SHOOT then
+		if playableUnit.kind.isEnemy then
+			color = conf.RED
+		elseif self.game.action == game.ACTION.SHOOT then
 			color = conf.YELLOW
 		elseif self.game.action == game.ACTION.HIT then
 			color = conf.BLUE
