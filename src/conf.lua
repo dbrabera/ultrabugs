@@ -1,6 +1,6 @@
 local conf = {}
 
---- Size of the grid in cells
+--- Size of the grid in tiles
 conf.GRID_SIZE = 10
 --- Size of the sprites in pixels
 conf.SPRITE_SIZE = 16
