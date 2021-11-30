@@ -22,6 +22,7 @@ function Engine:load()
 
 	self.minimap = love.graphics.newImage("assets/minimap.png")
 	self.title = love.graphics.newImage("assets/title.png")
+	self.mission = love.graphics.newImage("assets/mission.png")
 
 	self.regular = love.graphics.newFont("assets/GravityRegular5.ttf", 5)
 	self.bold = love.graphics.newFont("assets/GravityBold8.ttf", 8)

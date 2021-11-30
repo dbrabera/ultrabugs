@@ -6,6 +6,7 @@ local util = require("util")
 
 local screens = {}
 
+--- Shows the game title and credits.
 local MainScreen = {}
 
 function screens.newMainScreen(engine)
@@ -24,7 +25,7 @@ end
 
 function MainScreen:keypressed(key)
 	if key == "space" then
-		self.engine:push(screens.newGameScreen(self.engine))
+		self.engine:push(screens.newMissionScreen(self.engine))
 	end
 end
 
@@ -43,6 +44,47 @@ function MainScreen:draw()
 	util.drawText("< Press space to start >", self.engine.bold, color, x, 125, util.ALING.CENTER)
 end
 
+--- Shows a mission description.
+local MissionScreen = {}
+
+function screens.newMissionScreen(engine)
+	local self = {}
+	setmetatable(self, { __index = MissionScreen })
+
+	self.engine = engine
+	self.since = 0
+
+	return self
+end
+
+function MissionScreen:update(dt)
+	self.since = self.since + dt
+end
+
+function MissionScreen:keypressed(key)
+	if key == "space" then
+		self.engine:pop()
+		self.engine:push(screens.newGameScreen(self.engine))
+	end
+end
+
+function MissionScreen:draw()
+	love.graphics.setColor(conf.WHITE)
+	love.graphics.draw(self.engine.mission, 0, 0)
+
+	local x, _ = util.screenCenter()
+
+	util.drawText("Enter the colony and defeat", self.engine.bold, conf.WHITE, x, 95, util.ALING.CENTER)
+	util.drawText("the queen at level seven.", self.engine.bold, conf.WHITE, x, 115, util.ALING.CENTER)
+
+	local color = conf.WHITE
+	if math.floor(self.since * 2 % 2) == 0 then
+		color = conf.GREY
+	end
+	util.drawText("< Press space to continue >", self.engine.bold, color, x, 140, util.ALING.CENTER)
+end
+
+--- Shows the states after losing the game.
 local GameOverScreen = {}
 
 function screens.newGameOverScreen(engine, level, turnCount, killCount)
@@ -81,6 +123,7 @@ function GameOverScreen:draw()
 	util.drawText("< Press space to try again >", self.engine.bold, conf.WHITE, x, 115, util.ALING.CENTER)
 end
 
+--- Shows the stats after wining the game.
 local VictoryScreen = {}
 
 function screens.newVictoryScreen(engine, level, turnCount, killCount)
@@ -116,6 +159,7 @@ function VictoryScreen:draw()
 	util.drawText("< Press space to quit >", self.engine.bold, conf.WHITE, x, 115, util.ALING.CENTER)
 end
 
+--- Shows the board and HUD for a given game run.
 local GameScreen = {}
 
 function screens.newGameScreen(engine)
@@ -206,12 +250,14 @@ local function drawHealthbar(x, y, health, maxHealth, centered, borderColor, dam
 	end
 end
 
+-- Aggregates the current level stats with the ones for the whole game run.
 function GameScreen:trackStats()
 	local stats = self.game:stats()
 	self.turnCount = self.turnCount + stats.turnCount
 	self.killCount = self.killCount + stats.killCount
 end
 
+--- Delay to fade-in the screen at the beggining of the game.
 local START_FADE_DELAY_SECONDS = 0.5
 
 function GameScreen:draw()
@@ -284,10 +330,7 @@ function GameScreen:draw()
 	end
 end
 
-function GameScreen:drawButton(spriteID, x, y, selected, disabled)
-	self.engine.sprites:draw(spriteID, x, y)
-end
-
+--- Draws an message overlay on the center of the screen. Only a message can be shown at a given time.
 function GameScreen:drawMessage(msg)
 	local centerX, centerY = util.screenCenter()
 	local height, padding = 30, 2
@@ -298,6 +341,7 @@ function GameScreen:drawMessage(msg)
 	util.drawText(msg, self.engine.bold, conf.WHITE, centerX, y + 11, util.ALING.CENTER)
 end
 
+--- Displays the game board.
 local GamePanel = {}
 
 function screens.newGamePanel(engine, game, x, y)

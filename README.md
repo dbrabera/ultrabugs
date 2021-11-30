@@ -1,6 +1,6 @@
 # UltraBugs
 
-_UltraBugs_ is a tactical turn-based game built for the [Game Off 2021](https://itch.io/jam/game-off-2021) game jam using [LÖVE](https://love2d.org/).
+_UltraBugs_ is a tactical turn-based game built for the [Game Off 2021](https://itch.io/jam/game-off-2021) game jam with [LÖVE](https://love2d.org/).
 
 Manage a squad of three space marines as they venture inside the giant bug colony and defeat their queen at level seven.
 
@@ -40,4 +40,4 @@ $ make run
 
 ## License
 
-Code licensed under [GNU GPL v3](https://www.gnu.org/licenses/gpl-3.0.en.html), assets under [CC BY-NC-SA](https://creativecommons.org/licenses/by-nc-sa/4.0/).
+Code licensed under [GNU GPLv3](https://www.gnu.org/licenses/gpl-3.0.en.html), assets under [CC BY-NC-SA](https://creativecommons.org/licenses/by-nc-sa/4.0/).
