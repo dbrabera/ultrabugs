@@ -4,9 +4,9 @@ _UltraBugs_ is a tactical turn-based game built for the [Game Off 2021](https://
 
 Manage a squad of three space marines as they venture inside the giant bug colony and defeat their queen at level seven.
 
-![Gameplay demo](/demo.gif)
-
 Play it on [itch.io](https://dbrabera.itch.io/ultrabugs).
+
+![Gameplay demo](/demo.gif)
 
 ## Controls
 
