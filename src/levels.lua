@@ -2,6 +2,7 @@ local units = require("units")
 
 local levels = {}
 
+--- The levels found in the game.
 local LEVELS = {
 	{
 		map = {
@@ -183,8 +184,12 @@ local LEVELS = {
 	},
 }
 
+--- The maxium level in the game.
 levels.MAX_LEVEL = #LEVELS
 
+--- Builds the given level identified by its numeric ID. If no player units are given
+-- it creates a new squad, otherwise it reuses them. That allows to keep the squad for the
+-- whole game run.
 function levels.build(lvl, playerUnits)
 	local enemyUnits = {}
 
@@ -193,8 +198,8 @@ function levels.build(lvl, playerUnits)
 	end
 
 	for i, unit in ipairs(playerUnits) do
-		unit.gameX = LEVELS[lvl].players[i][1]
-		unit.gameY = LEVELS[lvl].players[i][2]
+		unit.x = LEVELS[lvl].players[i][1]
+		unit.y = LEVELS[lvl].players[i][2]
 	end
 
 	return LEVELS[lvl].map, playerUnits, enemyUnits

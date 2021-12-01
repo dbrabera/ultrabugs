@@ -7,6 +7,7 @@ function util.scaledCoords(x, y, scale)
 	return math.floor(x / scale), math.floor(y / scale)
 end
 
+--- A FIFO queue.
 local Queue = {}
 
 --- Creates a new FIFO queue.
@@ -188,7 +189,7 @@ end
 --- Checks whether the coordinates x2, y2 are inside the rectange formed by the given rectangle
 -- described by its origin x1, y1 and its width and height.
 function util.isInRect(x1, y1, w, h, x2, y2)
-	return x1 <= x2 and x2 <= x1 + w and y1 <= y2 and y2 <= y1 + h
+	return x1 <= x2 and x2 < x1 + w and y1 <= y2 and y2 < y1 + h
 end
 
 --- Flashes two colors over time according to the current age in seconds.

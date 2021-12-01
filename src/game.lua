@@ -7,11 +7,13 @@ local util = require("util")
 
 local game = {}
 
--- Time to wait on a *_TRANSITION state
+--- Time to wait on a *_TRANSITION state
 local TRANSITION_DELAY_SECONDS = 0.6
--- Time to wait on the ENEMY_MOVE state
+--- Time to wait on the ENEMY_MOVE state
 local ENEMY_MOVE_DELAY_SECONDS = 0.3
 
+--- The states that the game can reach. Transition states
+-- are used to time animations and effects.
 game.STATE = {
 	START_TRANSITION = "start_transition",
 	ENEMY_MOVE = "enemy_move",
@@ -25,14 +27,19 @@ game.STATE = {
 	VICTORY_TRANSITION = "victory_transition",
 }
 
+--- The actions that the player can perform.
 game.ACTION = {
 	MOVE = "move",
 	SHOOT = "shoot",
 	HIT = "hit",
 }
 
+--- The game implements the game logic for a given level, keeping
+-- track of the state and handling the player and enemy actions.
+-- A new game instance must be created for each level.
 local Game = {}
 
+--- Creates a new game.
 function game.newGame(lvl, playerUnits)
 	local self = {}
 	setmetatable(self, { __index = Game })
@@ -63,6 +70,7 @@ function game.newGame(lvl, playerUnits)
 	return self
 end
 
+--- Handles the keypressed callback.
 function Game:keypressed(key)
 	if self.state ~= game.STATE.PLAYER_TURN then
 		return
@@ -88,6 +96,7 @@ function Game:selectAction(action)
 	self.action = action
 end
 
+--- Ends the player turn and transitions to the next game state.
 function Game:endPlayerTurn()
 	self.action = game.ACTION.MOVE
 	self.selectedUnit = nil
@@ -104,6 +113,7 @@ function Game:endPlayerTurn()
 	end
 end
 
+--- Handles the mousepressed callback.
 function Game:mousepressed(x, y, button)
 	if self.state ~= game.STATE.PLAYER_TURN then
 		return
@@ -131,7 +141,7 @@ function Game:mousepressed(x, y, button)
 		return
 	end
 
-	if self.action == game.ACTION.MOVE then
+	if self:isMoving() then
 		if self:canMove(self.selectedUnit, x, y) then
 			self.selectedUnit:move(x, y)
 		end
@@ -142,17 +152,14 @@ function Game:mousepressed(x, y, button)
 		return
 	end
 
-	if self.action == game.ACTION.SHOOT then
-		if self:canShoot(self.selectedUnit, target) then
-			self.selectedUnit:shoot(target)
-		end
-	elseif self.action == game.ACTION.HIT then
-		if self:canHit(self.selectedUnit, target) then
-			self.selectedUnit:hit(target)
-		end
+	if self:isShooting() and self:canShoot(self.selectedUnit, target) then
+		self.selectedUnit:shoot(target)
+	elseif self:isHitting() and self:canHit(self.selectedUnit, target) then
+		self.selectedUnit:hit(target)
 	end
 end
 
+--- Handles the update callback.
 function Game:update(dt)
 	self.stateSince = self.stateSince + dt
 
@@ -211,23 +218,30 @@ function Game:update(dt)
 	end
 end
 
+--- Advances the game to the given state.
 function Game:advaceState(state)
 	self.state = state
 	self.stateSince = 0
 end
 
+--- Checks whether the current selected action is MOVE.
 function Game:isMoving()
 	return self.action == game.ACTION.MOVE
 end
 
+--- Checks whether the current selected action is SHOOT.
 function Game:isShooting()
 	return self.action == game.ACTION.SHOOT
 end
 
+--- Checks whether the current selected action is HIT.
 function Game:isHitting()
 	return self.action == game.ACTION.HIT
 end
 
+--- Returns the damage that the selected unit will do according
+-- to the current action. If there is no selected unit
+-- or action it returns zero.
 function Game:getActionDamage()
 	if not self.selectedUnit then
 		return 0
@@ -238,8 +252,12 @@ function Game:getActionDamage()
 	elseif self:isHitting() then
 		return self.selectedUnit.kind.combatDamage
 	end
+
+	return 0
 end
 
+--- Checks whether the position can be targeted according to the
+-- selected unit and action
 function Game:canTarget(x, y)
 	if not self.selectedUnit then
 		return false
@@ -261,6 +279,7 @@ function Game:canTarget(x, y)
 	end
 end
 
+--- Returns the positions to which the unit is allowed to act according to the selected action.
 function Game:allowedActions(unit)
 	if self:isMoving() then
 		return self:allowedMovements(unit)
@@ -271,6 +290,7 @@ function Game:allowedActions(unit)
 	end
 end
 
+--- Returns the positions to which the unit is allowed to move.
 function Game:allowedMovements(unit)
 	if unit.hasMoved then
 		return {}
@@ -278,7 +298,7 @@ function Game:allowedMovements(unit)
 
 	local res = {}
 
-	for _, pos in ipairs(util.neighbors({ x = unit.gameX, y = unit.gameY })) do
+	for _, pos in ipairs(util.neighbors({ x = unit.x, y = unit.y })) do
 		if self:isWalkable(pos.x, pos.y) and self:isEmpty(pos.x, pos.y) then
 			table.insert(res, pos)
 		end
@@ -287,6 +307,7 @@ function Game:allowedMovements(unit)
 	return res
 end
 
+--- Returns the positions to which the unit is allowed to hit.
 function Game:allowedHits(unit)
 	if unit.hasHit then
 		return {}
@@ -300,7 +321,7 @@ function Game:allowedHits(unit)
 		{ 0, 1 },
 		{ 1, 0 },
 	}) do
-		local x, y = unit.gameX + pos[1], unit.gameY + pos[2]
+		local x, y = unit.x + pos[1], unit.y + pos[2]
 		if self:isWalkable(x, y) then
 			table.insert(res, { x = x, y = y })
 		end
@@ -309,6 +330,7 @@ function Game:allowedHits(unit)
 	return res
 end
 
+--- Returns the positions to which the unit is allowed to shoot.
 function Game:allowedShots(unit)
 	if unit.hasShot then
 		return {}
@@ -321,9 +343,9 @@ function Game:allowedShots(unit)
 		{ 0, unit.kind.maxShotRange },
 		{ 0, -unit.kind.maxShotRange },
 	}) do
-		local x, y = unit.gameX + delta[1], unit.gameY + delta[2]
+		local x, y = unit.x + delta[1], unit.y + delta[2]
 
-		for _, pos in ipairs(util.los({ x = unit.gameX, y = unit.gameY }, { x = x, y = y }, function(p)
+		for _, pos in ipairs(util.los({ x = unit.x, y = unit.y }, { x = x, y = y }, function(p)
 			return self:isSolid(p.x, p.y)
 		end)) do
 			local target = self:getUnitAt(pos.x, pos.y)
@@ -345,37 +367,32 @@ function Game:allowedShots(unit)
 	return res
 end
 
-function Game:isAllowed(target, positions)
+--- Checks whether the target is in one of the given positions
+function Game:isInPositions(target, positions)
 	for _, pos in ipairs(positions) do
-		if target.gameX == pos.x and target.gameY == pos.y then
+		if target.x == pos.x and target.y == pos.y then
 			return true
 		end
 	end
 	return false
 end
 
+--- Checks whether the unit can move to the given position.
 function Game:canMove(unit, x, y)
-	return self:isAllowed({ gameX = x, gameY = y }, self:allowedMovements(unit))
+	return self:isInPositions({ x = x, y = y }, self:allowedMovements(unit))
 end
 
+--- Checks whether the unit can hit with a melee attack the given target unit.
 function Game:canHit(unit, target)
-	return self:isAllowed(target, self:allowedHits(unit))
+	return self:isInPositions(target, self:allowedHits(unit))
 end
 
+--- Checks whether the unit can shoot with a range attack the given target unit.
 function Game:canShoot(unit, target)
-	return self:isAllowed(target, self:allowedShots(unit))
+	return self:isInPositions(target, self:allowedShots(unit))
 end
 
-function Game:isInCombat(unit)
-	for _, pos in ipairs(self:allowedHits(unit)) do
-		local target = self:getUnitAt(pos.x, pos.y)
-		if target and target.kind.isEnemy then
-			return true
-		end
-	end
-	return false
-end
-
+--- Checks whether the given position is walkable.
 function Game:isWalkable(x, y)
 	return self:isInbounds(x, y) and tiles.KIND[self.map[y + 1][x + 1]].walkable
 end
@@ -390,7 +407,7 @@ function Game:isSolid(x, y)
 	return not self:isInbounds(x, y) or tiles.KIND[self.map[y + 1][x + 1]].solid
 end
 
---- Checks wether the unit has any pending actions in the current turn.
+--- Checks whether the unit has any pending actions in the current turn.
 function Game:isPendingUnit(unit)
 	if not unit:isAlive() then
 		return false
@@ -409,21 +426,23 @@ end
 --- Gets the unit at the position. If there is no unit it returns nil.
 function Game:getUnitAt(x, y)
 	for _, unit in ipairs(self.playerUnits) do
-		if unit:isAlive() and unit.gameX == x and unit.gameY == y then
+		if unit:isAlive() and unit.x == x and unit.y == y then
 			return unit
 		end
 	end
 	for _, unit in ipairs(self.enemyUnits) do
-		if unit:isAlive() and unit.gameX == x and unit.gameY == y then
+		if unit:isAlive() and unit.x == x and unit.y == y then
 			return unit
 		end
 	end
 end
 
-function Game:isInbounds(gameX, gameY)
-	return gameX >= 0 and gameY >= 0 and gameX < conf.GRID_SIZE and gameY < conf.GRID_SIZE
+--- Checks whether the given point is in the bounds of the playable grid.
+function Game:isInbounds(x, y)
+	return util.isInRect(0, 0, conf.GRID_SIZE, conf.GRID_SIZE, x, y)
 end
 
+--- Checks whether the game as reached the victory condition.
 function Game:isVictory()
 	for _, unit in ipairs(self.enemyUnits) do
 		if unit:isAlive() then
@@ -433,6 +452,7 @@ function Game:isVictory()
 	return true
 end
 
+--- Checks whether the game has reached the game over condition.
 function Game:isGameOver()
 	for _, unit in ipairs(self.playerUnits) do
 		if unit:isAlive() then
@@ -442,6 +462,7 @@ function Game:isGameOver()
 	return true
 end
 
+--- Returns the current aggregated game stats.
 function Game:stats()
 	local killCount = 0
 

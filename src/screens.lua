@@ -9,6 +9,7 @@ local screens = {}
 --- Shows the game title and credits.
 local MainScreen = {}
 
+--- Creates a new main screen.
 function screens.newMainScreen(engine)
 	local self = {}
 	setmetatable(self, { __index = MainScreen })
@@ -19,16 +20,19 @@ function screens.newMainScreen(engine)
 	return self
 end
 
+--- Handles the update callback.
 function MainScreen:update(dt)
 	self.age = self.age + dt
 end
 
+--- Handles the keypressed callback.
 function MainScreen:keypressed(key)
 	if key == "space" then
 		self.engine:push(screens.newMissionScreen(self.engine))
 	end
 end
 
+--- Handles the draw callback.
 function MainScreen:draw()
 	love.graphics.setColor(conf.WHITE)
 	love.graphics.draw(self.engine.titleBg, 0, 0)
@@ -50,6 +54,7 @@ end
 --- Shows a mission description.
 local MissionScreen = {}
 
+--- Creates a new mission screen.
 function screens.newMissionScreen(engine)
 	local self = {}
 	setmetatable(self, { __index = MissionScreen })
@@ -60,10 +65,12 @@ function screens.newMissionScreen(engine)
 	return self
 end
 
+--- Handles the update callback.
 function MissionScreen:update(dt)
 	self.age = self.age + dt
 end
 
+--- Handles the keypressed callback.
 function MissionScreen:keypressed(key)
 	if key == "space" then
 		self.engine:pop()
@@ -71,6 +78,7 @@ function MissionScreen:keypressed(key)
 	end
 end
 
+--- Handles the draw callback.
 function MissionScreen:draw()
 	love.graphics.setColor(conf.WHITE)
 	love.graphics.draw(self.engine.missionBg, 0, 0)
@@ -100,6 +108,7 @@ end
 --- Shows the states after losing the game.
 local GameOverScreen = {}
 
+--- Creates a new game over screen.
 function screens.newGameOverScreen(engine, level, turnCount, killCount)
 	local self = {}
 	setmetatable(self, { __index = GameOverScreen })
@@ -113,10 +122,12 @@ function screens.newGameOverScreen(engine, level, turnCount, killCount)
 	return self
 end
 
+--- Handles the update callback.
 function GameOverScreen:update(dt)
 	self.age = self.age + dt
 end
 
+--- Handles the keypressed callback.
 function GameOverScreen:keypressed(key)
 	if key == "space" then
 		self.engine:pop()
@@ -124,6 +135,7 @@ function GameOverScreen:keypressed(key)
 	end
 end
 
+--- Handles the draw callback.
 function GameOverScreen:draw()
 	love.graphics.setColor(conf.WHITE)
 	love.graphics.draw(self.engine.spaceBg, 0, 0)
@@ -157,6 +169,7 @@ end
 --- Shows the stats after wining the game.
 local VictoryScreen = {}
 
+--- Creates a new victory screen.
 function screens.newVictoryScreen(engine, level, turnCount, killCount)
 	local self = {}
 	setmetatable(self, { __index = VictoryScreen })
@@ -170,16 +183,19 @@ function screens.newVictoryScreen(engine, level, turnCount, killCount)
 	return self
 end
 
+--- Handles the update callback.
 function VictoryScreen:update(dt)
 	self.age = self.age + dt
 end
 
+--- Handles the keypressed callback.
 function VictoryScreen:keypressed(key)
 	if key == "space" then
 		self.engine:pop()
 	end
 end
 
+--- Handles the draw callback.
 function VictoryScreen:draw()
 	love.graphics.setColor(conf.WHITE)
 	love.graphics.draw(self.engine.spaceBg, 0, 0)
@@ -211,6 +227,7 @@ end
 --- Shows the board and HUD for a given game run.
 local GameScreen = {}
 
+--- Creates a new game screen.
 function screens.newGameScreen(engine)
 	local self = {}
 	setmetatable(self, { __index = GameScreen })
@@ -240,10 +257,12 @@ function screens.newGameScreen(engine)
 	return self
 end
 
+--- Handles the keypressed callback.
 function GameScreen:keypressed(key)
 	self.game:keypressed(key)
 end
 
+--- Handles the mousepressed callback.
 function GameScreen:mousepressed(x, y, button)
 	self.gamePanel:mousepressed(x, y, button)
 	self.moveBtn:mousepressed(x, y, button)
@@ -252,6 +271,7 @@ function GameScreen:mousepressed(x, y, button)
 	self.turnBtn:mousepressed(x, y, button)
 end
 
+--- Handles the update callback.
 function GameScreen:update(dt)
 	self.game:update(dt)
 
@@ -274,6 +294,7 @@ function GameScreen:update(dt)
 	end
 end
 
+--- Draws the unit health bar.
 local function drawHealthbar(x, y, health, maxHealth, centered, borderColor, damage)
 	borderColor = borderColor or conf.WHITE
 	local w = 4 * maxHealth + 1 - (1 * (maxHealth - 1))
@@ -309,6 +330,7 @@ end
 --- Delay to fade-in the screen at the beggining of the game.
 local START_FADE_DELAY_SECONDS = 0.5
 
+--- Handles the draw callback.
 function GameScreen:draw()
 	local padding = 8
 
@@ -393,6 +415,7 @@ end
 --- Displays the game board.
 local GamePanel = {}
 
+--- Creates a new game panel.
 function screens.newGamePanel(engine, game, x, y)
 	local self = {}
 	setmetatable(self, { __index = GamePanel })
@@ -405,6 +428,7 @@ function screens.newGamePanel(engine, game, x, y)
 	return self
 end
 
+--- Handles the mousepressed callback.
 function GamePanel:mousepressed(x, y, button)
 	if not self:isInbounds(x, y) then
 		return
@@ -414,26 +438,32 @@ function GamePanel:mousepressed(x, y, button)
 	self.game:mousepressed(gameX, gameY, button)
 end
 
+--- Checks whether the given position is in the bounds of the game panel.
 function GamePanel:isInbounds(x, y)
 	local size = conf.GRID_SIZE * conf.SPRITE_SIZE
-	return self.x <= x and x < self.x + size and self.y <= y and self.y + size
+	return util.isInRect(self.x, self.y, size, size, x, y)
 end
 
+--- Transform the given position from game coordinates to screen coordinates.
 function GamePanel:screenCoords(gameX, gameY)
 	return self.x + gameX * conf.SPRITE_SIZE, self.y + gameY * conf.SPRITE_SIZE
 end
 
+--- Transforms the given positon from screen coordinates to game coordinates.
 function GamePanel:gameCoords(x, y)
 	local gameX = math.floor((x - self.x) / conf.SPRITE_SIZE)
 	local gameY = math.floor((y - self.y) / conf.SPRITE_SIZE)
 	return gameX, gameY
 end
 
+--- Returns the unit hovered by the mouse. If there is none it returns nil.
 function GamePanel:getHoveredUnit()
 	local gameX, gameY = self:getGameCursorPosition()
 	return self.game:getUnitAt(gameX, gameY)
 end
 
+--- Returns the unit being targeted by the selected unit and action. If there
+-- is none it returns nil.
 function GamePanel:getTargetedUnit()
 	if not self.game.selectedUnit then
 		return nil
@@ -453,6 +483,7 @@ function GamePanel:getTargetedUnit()
 	return nil
 end
 
+--- Returns the selected unit if there is any. If there is none it returs the hovered unit.
 function GamePanel:getPlayableUnit()
 	if self.game.selectedUnit then
 		return self.game.selectedUnit
@@ -461,18 +492,20 @@ function GamePanel:getPlayableUnit()
 	return self:getHoveredUnit()
 end
 
+--- Returns the position of the mouse in the game grid.
 function GamePanel:getGameCursorPosition()
 	local x, y = love.mouse.getPosition()
 	x, y = util.scaledCoords(x, y, conf.SCALE)
 	return self:gameCoords(x, y)
 end
 
+--- Handles the draw callback.
 function GamePanel:draw()
 	self:drawGrid()
 
 	if self.game.state == game.STATE.PLAYER_TURN then
 		if self.game.selectedUnit then
-			local x, y = self:screenCoords(self.game.selectedUnit.gameX, self.game.selectedUnit.gameY)
+			local x, y = self:screenCoords(self.game.selectedUnit.x, self.game.selectedUnit.y)
 			util.drawRectangle("line", x, y, 16, 16, conf.LIME)
 		end
 
@@ -584,7 +617,7 @@ function GamePanel:drawUnitShadow(unit)
 		return
 	end
 
-	local x, y = self:screenCoords(unit.gameX, unit.gameY)
+	local x, y = self:screenCoords(unit.x, unit.y)
 	self.engine.sprites:draw(17, x, y)
 end
 
@@ -594,7 +627,7 @@ function GamePanel:drawUnit(unit)
 		return
 	end
 
-	local x, y = self:screenCoords(unit.gameX, unit.gameY)
+	local x, y = self:screenCoords(unit.x, unit.y)
 	self.engine.sprites:draw(
 		unit.kind.spriteID,
 		x,
@@ -609,7 +642,7 @@ end
 
 --- Draws the unit health and action indicators
 function GamePanel:drawUnitIndicators(unit, isSelected, isHovered, isTargeted)
-	local x, y = self:screenCoords(unit.gameX, unit.gameY)
+	local x, y = self:screenCoords(unit.x, unit.y)
 	local showHealthBar = isSelected or isHovered
 	local damage = 0
 
@@ -648,8 +681,10 @@ function GamePanel:drawDamage(damage, age, x, y)
 	)
 end
 
+--- A button shaped with a single sprite.
 local SpriteButton = {}
 
+--- Creates a new sprite button.
 function screens.newSpriteButton(engine, spriteID, caption, x, y, func)
 	local self = {}
 	setmetatable(self, { __index = SpriteButton })
@@ -673,6 +708,7 @@ function SpriteButton:isHovered()
 	return util.isInRect(self.x, self.y, self.w, self.h, mx, my)
 end
 
+--- Handles the mousepressed callback.
 function SpriteButton:mousepressed(x, y, button)
 	if button ~= 1 then
 		return
@@ -683,6 +719,7 @@ function SpriteButton:mousepressed(x, y, button)
 	end
 end
 
+--- Handles the draw callback.
 function SpriteButton:draw(selected, disabled)
 	local spriteID = self.spriteID
 	local color = conf.GREY
@@ -709,8 +746,10 @@ function SpriteButton:draw(selected, disabled)
 	)
 end
 
+--- A button with a text label.
 local LabelButton = {}
 
+--- Creates a new label button.
 function screens.newLabelButton(engine, label, x, y, func)
 	local self = {}
 	setmetatable(self, { __index = LabelButton })
@@ -733,6 +772,7 @@ function LabelButton:isHovered()
 	return util.isInRect(self.x, self.y, self.w, self.h, mx, my)
 end
 
+--- Handles the mousepressed callback.
 function LabelButton:mousepressed(x, y, button)
 	if button ~= 1 then
 		return
@@ -743,6 +783,7 @@ function LabelButton:mousepressed(x, y, button)
 	end
 end
 
+--- Handles the draw callback.
 function LabelButton:draw(disabled)
 	local shift = 0
 	local color = conf.GREY

@@ -1,6 +1,7 @@
 local unit = {}
 
-local function defkind(spriteID, name, maxHealth, combatDamage, shotDamage, minShotRange, maxShotRange, isEnemy)
+--- Defines a new kind of unit.
+local function kind(spriteID, name, maxHealth, combatDamage, shotDamage, minShotRange, maxShotRange, isEnemy)
 	return {
 		spriteID = spriteID,
 		name = name,
@@ -13,29 +14,33 @@ local function defkind(spriteID, name, maxHealth, combatDamage, shotDamage, minS
 	}
 end
 
+--- The kind of units found in the game.
 unit.KIND = {
-	defkind(35, "Trooper", 2, 1, 2, 2, 5, false),
-	defkind(34, "Captain", 3, 2, 3, 2, 3, false),
-	defkind(33, "Sniper", 2, 1, 1, 2, 7, false),
+	kind(35, "Trooper", 2, 1, 2, 2, 5, false),
+	kind(34, "Captain", 3, 2, 3, 2, 3, false),
+	kind(33, "Sniper", 2, 1, 1, 2, 7, false),
 	-- Enemy names are inspired on the https://en.wikipedia.org/wiki/Arachnid class
-	defkind(25, "Opilion", 3, 1, 0, 0, 0, true),
-	defkind(26, "Trombid", 2, 2, 1, 1, 3, true),
-	defkind(27, "Xiphora", 1, 1, 1, 2, 4, true),
-	defkind(28, "Teramon", 4, 2, 0, 0, 0, true),
-	defkind(29, "Queen", 4, 2, 1, 1, 2, true),
+	kind(25, "Opilion", 3, 1, 0, 0, 0, true),
+	kind(26, "Trombid", 2, 2, 1, 1, 3, true),
+	kind(27, "Xiphora", 1, 1, 1, 2, 4, true),
+	kind(28, "Teramon", 4, 2, 0, 0, 0, true),
+	kind(29, "Queen", 4, 2, 1, 1, 2, true),
 }
 
+--- A unit represents a playable character in the game. It has a position in the grid
+-- and a set of attributes according to its kind.
 local Unit = {}
 
-function unit.newUnit(kind, gameX, gameY)
+--- Creates a new unit from the given kind.
+function unit.newUnit(kind, x, y)
 	local self = {}
 	setmetatable(self, { __index = Unit })
 
 	self.kind = kind
 	self.health = kind.maxHealth
 
-	self.gameX = gameX
-	self.gameY = gameY
+	self.x = x
+	self.y = y
 
 	self.hasMoved = false
 	self.hasShot = false
@@ -49,6 +54,7 @@ function unit.newUnit(kind, gameX, gameY)
 	return self
 end
 
+--- Handles the update callback.
 function Unit:update(dt)
 	self.lastDamageAge = self.lastDamageAge + dt
 
@@ -57,25 +63,32 @@ function Unit:update(dt)
 	end
 end
 
+--- Skips the unit turn setting all the action flags to true.
 function Unit:skipTurn()
 	self.hasMoved = true
 	self.hasShot = true
 	self.hasHit = true
 end
 
+--- Resets the unit turn setting all the action flags to false and
+-- leaving the unit ready to take a new turn.
 function Unit:resetTurn()
 	self.hasMoved = false
 	self.hasShot = false
 	self.hasHit = false
 end
 
-function Unit:move(gameX, gameY)
-	self.gameX = gameX
-	self.gameY = gameY
+--- Moves the unit to the given position. This assumes that
+-- the caller already checked that the movement was valid.
+function Unit:move(x, y)
+	self.x = x
+	self.y = y
 	self.hasMoved = true
 	self.hasShot = true
 end
 
+--- Hits the given target with the melee attack. This assumes
+-- that the caller already checked that the attack was valid.
 function Unit:hit(target)
 	target:takeDamage(self.kind.combatDamage)
 	self.hasShot = true
@@ -83,6 +96,8 @@ function Unit:hit(target)
 	self.hasHit = true
 end
 
+--- Shoots the given target with the ranged attack. This assumes
+-- that the caller already checked that the attack was valid.
 function Unit:shoot(target)
 	target:takeDamage(self.kind.shotDamage)
 	self.hasShot = true
@@ -90,6 +105,7 @@ function Unit:shoot(target)
 	self.hasHit = true
 end
 
+--- Takes the given damage.
 function Unit:takeDamage(damage)
 	if self.health <= damage then
 		self.lastDamage = self.health
@@ -101,6 +117,7 @@ function Unit:takeDamage(damage)
 	self.lastDamageAge = 0
 end
 
+--- Checks whether a given unit belongs to the adversary squad.
 function Unit:isAdversary(other)
 	if not other then
 		return false
@@ -108,17 +125,18 @@ function Unit:isAdversary(other)
 	return self.kind.isEnemy ~= other.kind.isEnemy
 end
 
+--- Checks whether the given position is in range according to the kind ranged attack.
 function Unit:isInShotRange(x, y)
 	-- check whether is in the same axis as shooting can only be done in 4 directions
-	if self.gameX ~= x and self.gameY ~= y then
+	if self.x ~= x and self.y ~= y then
 		return false
 	end
 
-	if math.abs(x - self.gameX) < self.kind.minShotRange and math.abs(y - self.gameY) < self.kind.minShotRange then
+	if math.abs(x - self.x) < self.kind.minShotRange and math.abs(y - self.y) < self.kind.minShotRange then
 		return false
 	end
 
-	return math.abs(x - self.gameX) <= self.kind.maxShotRange and math.abs(y - self.gameY) <= self.kind.maxShotRange
+	return math.abs(x - self.x) <= self.kind.maxShotRange and math.abs(y - self.y) <= self.kind.maxShotRange
 end
 
 --- Checks whether the unit is alive.
@@ -135,7 +153,7 @@ function Unit:isEnemy()
 	return self.kind.isEnemy
 end
 
---- Checks wether the unit belongs to the player.
+--- Checks whether the unit belongs to the player.
 function Unit:isPlayer()
 	return not self.kind.isEnemy
 end

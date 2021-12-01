@@ -2,8 +2,13 @@ local util = require("util")
 
 local enemy = {}
 
+--- The enemy controls the actions of the enemy squad units. At the moment it implements
+-- a fairly simplistc stateless AI that will just rush the units towards the player.
+--
+-- See: http://www.roguebasin.com/index.php/Roguelike_Intelligence_-_Stateless_AIs
 local Enemy = {}
 
+--- Creates a new enemy.
 function enemy.newEnemy(game)
 	local self = {}
 	setmetatable(self, { __index = Enemy })
@@ -12,6 +17,9 @@ function enemy.newEnemy(game)
 	return self
 end
 
+--- Takes a turn for one of the units. If there are no units with free actions
+-- it returns true to indicate that the enemy turn was completed. The turns are
+-- taking step by step for each unit to allow time to draw the movements.
 function Enemy:takeTurn(dt)
 	for _, unit in ipairs(self.game.enemyUnits) do
 		if self:doUnitAction(unit) then
@@ -22,7 +30,8 @@ function Enemy:takeTurn(dt)
 	return true
 end
 
---- Uses the unit to do an action. It returns a boolean indicating whether any action was done or the unit was skipped.
+--- Uses the unit to do an action. It returns a boolean indicating whether any action
+-- was done or the unit was skipped.
 function Enemy:doUnitAction(unit)
 	if not self.game:isPendingUnit(unit) then
 		return false
@@ -36,7 +45,7 @@ function Enemy:doUnitAction(unit)
 
 	local next = table.remove(playerPath)
 
-	if not unit.hasShot and self.game:isAllowed(target, self.game:allowedShots(unit)) then
+	if not unit.hasShot and self.game:isInPositions(target, self.game:allowedShots(unit)) then
 		unit:shoot(target)
 		return true
 	end
@@ -48,7 +57,7 @@ function Enemy:doUnitAction(unit)
 		unit.hasMoved = true
 	end
 
-	if not unit.hasHit and self.game:isAllowed(target, self.game:allowedHits(unit)) then
+	if not unit.hasHit and self.game:isInPositions(target, self.game:allowedHits(unit)) then
 		unit:hit(target)
 		return true
 	else
@@ -78,8 +87,9 @@ function Enemy:findClosestPlayerUnit(unit)
 	return closestUnit, minPath
 end
 
+--- Finds a path from the given source unit to the target.
 function Enemy:findPath(source, target)
-	return util.findPath({ x = source.gameX, y = source.gameY }, { x = target.gameX, y = target.gameY }, function(pos)
+	return util.findPath({ x = source.x, y = source.y }, { x = target.x, y = target.y }, function(pos)
 		return self.game:isWalkable(pos.x, pos.y)
 	end)
 end

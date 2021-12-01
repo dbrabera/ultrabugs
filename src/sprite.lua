@@ -1,7 +1,9 @@
 local sprite = {}
 
+--- A sprite atlas maps an image containing multiple sprites to individual sprites referenced by an ID.
 local SpriteAtlas = {}
 
+--- Creates a new sprite atlas from the image found at the given path.
 function sprite.newSpriteAtlas(path, size)
 	local self = {}
 	setmetatable(self, { __index = SpriteAtlas })
@@ -23,11 +25,13 @@ function sprite.newSpriteAtlas(path, size)
 	return self
 end
 
+--- Draws the sprite associated with the ID in the given screen position.
 function SpriteAtlas:draw(id, x, y, alpha)
 	love.graphics.setColor(1, 1, 1, alpha or 1)
 	love.graphics.draw(self.img, self.quads[id], x, y)
 end
 
+--- Returns the image data associated with the given ID.
 function SpriteAtlas:imageData(id, scale)
 	local canvas = love.graphics.getCanvas()
 	local tmp = love.graphics.newCanvas(self.size * scale, self.size * scale)
