@@ -370,7 +370,9 @@ function GameScreen:draw()
 		self.hitBtn:draw(self.game:isHitting(), self.game.selectedUnit.hasHit)
 	end
 
-	self.turnBtn:draw(self.game.state ~= game.STATE.PLAYER_TURN)
+	if self.game.state == game.STATE.PLAYER_TURN then
+		self.turnBtn:draw()
+	end
 
 	util.drawText("Level " .. self.level, self.engine.regular, conf.WHITE, 260, 10)
 	love.graphics.draw(self.engine.minimap, 270, 24)
