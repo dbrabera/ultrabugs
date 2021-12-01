@@ -30,16 +30,23 @@
 
     <script type="text/javascript">
       var loadingContext = document.getElementById("loadingCanvas").getContext("2d");
-      function drawLoadingText(text) {
+
+      function drawLoadingScreen(loaded, total) {
         var canvas = loadingContext.canvas;
 
         loadingContext.fillStyle = "rgb(0, 0, 0)";
         loadingContext.fillRect(0, 0, canvas.scrollWidth, canvas.scrollHeight);
 
-        loadingContext.font = "2em arial";
-        loadingContext.textAlign = "center";
-        loadingContext.fillStyle = "rgb(255, 255, 255)";
-        loadingContext.fillText(text, canvas.scrollWidth / 2, canvas.scrollHeight / 2);
+        var maxWidth = 200;
+        var x = canvas.scrollWidth / 2 - maxWidth / 2;
+        var y = canvas.scrollHeight / 2;
+
+        loadingContext.fillStyle = "rgb(34, 32, 52)";
+        loadingContext.fillRect(x, y, maxWidth, 16);
+
+        var currWidth = maxWidth * (loaded / total);
+        loadingContext.fillStyle = "rgb(105, 106, 106)";
+        loadingContext.fillRect(x, y, currWidth, 16);
       }
 
       window.onload = function () {
@@ -81,40 +88,27 @@
 
           return canvas;
         })(),
-        setStatus: function (text) {
-          if (text) {
-            drawLoadingText(text);
-          } else if (Module.remainingDependencies === 0) {
+        totalDependencies: 7, // the number of dependencies is fixed as the game is packaded as a .zip
+        loadedDependencies: 0,
+        monitorRunDependencies: function (left) {
+          this.loadedDependencies++;
+
+          if (left === 0) {
             document.getElementById("loadingCanvas").style.display = "none";
             document.getElementById("canvas").style.display = "block";
+          } else {
+            drawLoadingScreen(this.loadedDependencies, this.totalDependencies);
           }
         },
-        totalDependencies: 0,
-        remainingDependencies: 0,
-        monitorRunDependencies: function (left) {
-          this.remainingDependencies = left;
-          this.totalDependencies = Math.max(this.totalDependencies, left);
-          Module.setStatus(
-            left
-              ? "Preparing... (" + (this.totalDependencies - left) + "/" + this.totalDependencies + ")"
-              : "All downloads complete."
-          );
-        },
-      };
-      Module.setStatus("Downloading...");
-      window.onerror = function (event) {
-        // TODO: do not warn on ok events like simulating an infinite loop or exitStatus
-        Module.setStatus("Exception thrown, see JavaScript console");
-        Module.setStatus = function (text) {
-          if (text) Module.printErr("[post-exception status] " + text);
-        };
       };
 
-      var applicationLoad = function (e) {
+      drawLoadingScreen(Module.loadedDependencies, Module.totalDependencies);
+
+      function onLoveLoad() {
         Love(Module);
-      };
+      }
     </script>
     <script type="text/javascript" src="game.js"></script>
-    <script async type="text/javascript" src="love.js" onload="applicationLoad(this)"></script>
+    <script async type="text/javascript" src="love.js" onload="onLoveLoad(this)"></script>
   </body>
 </html>
